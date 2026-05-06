@@ -77,10 +77,6 @@
             color: #6B6560;
         }
 
-        .kpi-value {
-            font-weight: 600;
-            margin-top: 4px;
-        }
 
         /* GRID */
         .grid {
@@ -253,9 +249,7 @@
             box-shadow: none;
         }
 
-        .planner-grid .panel:nth-child(2) {
-            grid-area: timeline;
-        }
+
 
         .tasks-panel {
             grid-area: tasks;
@@ -315,6 +309,55 @@
             height: 1px;
             background: #E2DDD6;
 
+        }
+
+        .empty-state {
+            font-size: 13px;
+            color: #9A948D;
+            padding: 10px;
+            border: 1px dashed #E2DDD6;
+            border-radius: 8px;
+            background: #FAF9F7;
+        }
+
+        .nav-btn {
+            border: 1px solid #E2DDD6;
+            background: #fff;
+            border-radius: 8px;
+            padding: 6px 10px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.2s ease;
+        }
+
+        .nav-btn:hover {
+            background: #F5F3EF;
+            transform: translateY(-1px);
+        }
+
+        .nav-btn:active {
+            transform: scale(0.95);
+        }
+
+        .survey-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .survey-title-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        #timeline {
+            grid-area: timeline;
+        }
+
+        .survey-nav {
+            display: flex;
+            gap: 6px;
         }
 
         @media (max-width: 768px) {
@@ -389,31 +432,41 @@
         <div class="divider"></div>
         <!-- 1. ANKIETA STATUSOWA -->
         <div class="section">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-                <h2 class="section-title">Ankieta statusowa (30.04.2026)</h2>
+
+            <div class="survey-header">
+
+                <div class="survey-title-group">
+                    <h2 class="section-title" id="surveyDate"></h2>
+
+                    <div class="survey-nav">
+                        <button class="nav-btn" onclick="prevSurvey()">‹</button>
+                        <button class="nav-btn" onclick="nextSurvey()">›</button>
+                    </div>
+                </div>
 
                 <a class="project-link" href="https://oledaw.github.io/projectweeklystatus/" target="_blank">
                     Otwórz ankietę →
                 </a>
+
             </div>
-            
+
             <div class="grid">
                 <!-- SCORE -->
                 <div class="panel">
 
 
-                <div class="status" id="status"></div>
-                <div class="score" id="score"></div>
-                <div class="trend" id="trend"></div>
-                <div class="summary" id="summary"></div>
+                    <div class="status" id="status"></div>
+                    <div class="score" id="score"></div>
+                    <div class="trend" id="trend"></div>
+                    <div class="summary" id="summary"></div>
 
-            </div>
+                </div>
 
-<div class="panel">
-    <h3>Scoring obszarów</h3>
-            <div class="kpi-grid" id="kpis"></div>
+                <div class="panel">
+                    <h3>Scoring obszarów</h3>
+                    <div class="kpi-grid" id="kpis"></div>
+                </div>
             </div>
-        </div>
         </div>
         <div class="divider"></div>
 
@@ -476,47 +529,73 @@
         /* ───── JSON INPUT (TU PODMIENIASZ DANYMI Z API) ───── */
 
 
+        const surveyHistory = [{
+                "project": {
+                    "name": "Project Alpha",
+                    "url": "https://example.com/projects/alpha"
+                },
+                "week": "2026-W19",
+                "status": "A",
+                "score": 78,
+                "prevScore": 83,
+                "kpis": [{
+                        "name": "Delivery",
+                        "value": "A"
+                    },
+                    {
+                        "name": "Scope",
+                        "value": "G"
+                    },
+                    {
+                        "name": "Risks",
+                        "value": "A"
+                    },
+                    {
+                        "name": "Team",
+                        "value": "G"
+                    },
+                    {
+                        "name": "Stakeholders",
+                        "value": "R"
+                    }
+                ],
+                "risks": [
+                    "Opóźnienie delivery (2 tyg.)",
+                    "Brak decyzji stakeholdera",
+                    "Scope creep w module X"
+                ],
+                "actions": [
+                    "Eskalacja do sponsora",
+                    "Replan sprintów",
+                    "Zamrożenie scope"
+                ],
+                "summary": "Projekt wymaga stabilizacji w obszarze delivery i decyzji stakeholderów."
+            },
+            {
+                week: "2026-W18",
+                date: "23.04.2026",
+                status: "G",
+                score: 83,
+                prevScore: 80,
+                summary: "Poprawa sytuacji...",
+                kpis: [{
+                        name: "Delivery",
+                        value: "G"
+                    },
+                    {
+                        name: "Scope",
+                        value: "G"
+                    }
+                ]
+            }
+        ];
+
+
         const data = {
             "project": {
                 "name": "Project Alpha",
                 "url": "https://example.com/projects/alpha"
-            },
-            "week": "2026-W19",
-            "status": "A",
-            "score": 78,
-            "prevScore": 83,
-            "kpis": [{
-                    "name": "Delivery",
-                    "value": "A"
-                },
-                {
-                    "name": "Scope",
-                    "value": "G"
-                },
-                {
-                    "name": "Risks",
-                    "value": "A"
-                },
-                {
-                    "name": "Team",
-                    "value": "G"
-                },
-                {
-                    "name": "Stakeholders",
-                    "value": "R"
-                }
-            ],
-            "risks": [
-                "Opóźnienie delivery (2 tyg.)",
-                "Brak decyzji stakeholdera",
-                "Scope creep w module X"
-            ],
-            "actions": [
-                "Eskalacja do sponsora",
-                "Replan sprintów",
-                "Zamrożenie scope"
-            ],
-            "summary": "Projekt wymaga stabilizacji w obszarze delivery i decyzji stakeholderów."
+            }
         };
 
         const plans = {
@@ -604,6 +683,7 @@
         };
 
         let selectedDate = null;
+        let currentIndex = 0;
 
         const statusColors = {
             done: "#2E7D32", // zielony
@@ -685,6 +765,25 @@
 
                 el.appendChild(div);
             });
+        }
+
+        function prevSurvey() {
+            if (currentIndex < surveyHistory.length - 1) {
+                currentIndex++;
+                renderSurvey();
+            }
+        }
+
+        function nextSurvey() {
+            if (currentIndex > 0) {
+                currentIndex--;
+                renderSurvey();
+            }
+        }
+
+        function renderProject() {
+            document.getElementById("projectTitle").innerText = data.project.name;
+            document.getElementById("projectLink").href = data.project.url;
         }
 
         function highlightTimelineRange(start, end) {
@@ -843,7 +942,9 @@
         }
 
 
-        function render() {
+        function renderSurvey() {
+
+            const data = surveyHistory[currentIndex];
 
             const statusMap = {
                 G: "🟢 DOBRY",
@@ -851,9 +952,8 @@
                 R: "🔴 ZAGROŻONY"
             };
 
-            document.getElementById("projectTitle").innerText = data.project.name;
-
-            document.getElementById("projectLink").href = data.project.url;
+            document.getElementById("surveyDate").innerText =
+                `Ankieta statusowa (${data.week})`;
 
             document.getElementById("status").innerText = statusMap[data.status];
             document.getElementById("score").innerText = data.score;
@@ -867,7 +967,6 @@
 
             document.getElementById("summary").innerText = data.summary;
 
-            /* KPI */
             const kpi = document.getElementById("kpis");
             kpi.innerHTML = "";
 
@@ -875,26 +974,48 @@
                 const el = document.createElement("div");
                 el.className = "kpi";
                 el.innerHTML = `
-    <div class="kpi-title">${k.name}</div>
-    <div class="kpi-value-wrap">
-        <span class="status-dot ${k.value}"></span>
-        <span class="kpi-value">${k.value}</span>
-    </div>
-`;
+            <div class="kpi-title">${k.name}</div>
+            <div class="kpi-value-wrap">
+                <span class="status-dot ${k.value}"></span>
+                <span class="kpi-value">${k.value}</span>
+            </div>
+        `;
                 kpi.appendChild(el);
             });
 
-
             /* RISKS */
-            document.getElementById("risks").innerHTML =
-                data.risks.map(r => `<div class="item">⚠ ${r}</div>`).join("");
+            const risksEl = document.getElementById("risks");
+
+            if (!data.risks || data.risks.length === 0) {
+                risksEl.innerHTML = `
+        <div class="empty-state">
+            ✔ Brak istotnych ryzyk
+        </div>
+    `;
+            } else {
+                risksEl.innerHTML = data.risks
+                    .map(r => `<div class="item">⚠ ${r}</div>`)
+                    .join("");
+            }
 
             /* ACTIONS */
-            document.getElementById("actions").innerHTML =
-                data.actions.map(a => `<div class="item">• ${a}</div>`).join("");
+            const actionsEl = document.getElementById("actions");
+
+            if (!data.actions || data.actions.length === 0) {
+                actionsEl.innerHTML = `
+        <div class="empty-state">
+            ✔ Brak działań do wykonania
+        </div>
+    `;
+            } else {
+                actionsEl.innerHTML = data.actions
+                    .map(a => `<div class="item">• ${a}</div>`)
+                    .join("");
+            }
         }
 
-        render();
+        renderProject();
+        renderSurvey();
         renderTasks();
         renderTimeline();
         renderPredictability();

@@ -270,6 +270,46 @@
             vertical-align: middle;
         }
 
+        .flatpickr-day.selected-status {
+            filter: brightness(0.75);
+        }
+
+        .tasks-collapsible summary {
+            cursor: pointer;
+            list-style: none;
+        }
+
+        .tasks-collapsible summary::-webkit-details-marker {
+            display: none;
+        }
+
+        /* custom strzałka */
+        .tasks-collapsible summary::after {
+            content: "▸";
+            float: right;
+            transition: transform 0.2s ease;
+        }
+
+        .tasks-collapsible[open] summary::after {
+            transform: rotate(90deg);
+        }
+
+        /* spacing */
+        .tasks-collapsible #tasks {
+            margin-top: 10px;
+        }
+
+        .tasks-collapsible summary {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+        }
+
+        .tasks-collapsible h3 {
+            margin: 0;
+        }
+
         @media (max-width: 768px) {
             body {
                 padding: 12px;
@@ -296,13 +336,7 @@
                 align-items: flex-start;
                 gap: 8px;
             }
-        }
 
-        .flatpickr-day.selected,
-        .flatpickr-day.startRange,
-        .flatpickr-day.endRange {
-            border-color: #ff6b00;
-            border-width: 4px;
         }
     </style>
 </head>
@@ -368,8 +402,12 @@
                 </div>
 
                 <div class="panel tasks-panel">
-                    <h3>Tasks</h3>
-                    <div id="tasks"></div>
+                    <details class="tasks-collapsible">
+                        <summary>
+                            <h3>Tasks</h3>
+                        </summary>
+                        <div id="tasks"></div>
+                    </details>
                 </div>
 
             </div>
@@ -461,7 +499,8 @@
                 },
                 {
                     milestone: "UAT",
-                    date: "2026-05-12",
+                    date: "2026-05-15",
+                    start: "2026-05-12",
                     status: "in_progress",
                     isUpdated: 1
                 },
@@ -473,6 +512,8 @@
                 }
             ]
         };
+
+        let selectedDate = null;
 
         const statusColors = {
             done: "#2E7D32", // zielony
@@ -519,25 +560,62 @@
                     m.status === "in_progress" ? "⏳" :
                     "•";
 
+                let rangeText = m.date;
+
+                if (m.start) {
+                    rangeText = `${m.start} → ${m.date}`;
+                }
+
                 const div = document.createElement("div");
                 div.className = "timeline-item";
-                div.dataset.date = m.date; // 🔥 KLUCZ
+                div.dataset.date = m.date;
+                div.dataset.start = m.start || m.date;
 
                 div.innerHTML = `
-    <span>
-        ${status} ${m.milestone}
-    </span>
-    <span>
-        ${m.isUpdated ? '<span class="dot"></span>' : ''} ${m.date}
-    </span>
-`;
+            <span>
+                ${status} ${m.milestone}
+            </span>
+            <span>
+                ${m.isUpdated ? '<span class="dot"></span>' : ''} ${rangeText}
+            </span>
+        `;
 
                 div.addEventListener("click", () => {
-                    fp.setDate(m.date, true); // updates calendar + triggers onChange
-                    highlightTimeline(m.date);
+
+                    const start = m.start || m.date;
+                    const end = m.date;
+
+                    fp.setDate([start, end], true); // 🔥 KLUCZ: RANGE
+
+                    highlightTimelineRange(
+                        new Date(start),
+                        new Date(end)
+                    );
                 });
 
                 el.appendChild(div);
+            });
+        }
+
+        function highlightTimelineRange(start, end) {
+
+            document.querySelectorAll(".timeline-item")
+                .forEach(el => el.classList.remove("active"));
+
+            const startTime = start.getTime();
+            const endTime = end.getTime();
+
+            document.querySelectorAll(".timeline-item").forEach(el => {
+
+                const mStart = new Date(el.dataset.start).getTime();
+                const mEnd = new Date(el.dataset.date).getTime();
+
+                const overlaps =
+                    mStart <= endTime && mEnd >= startTime;
+
+                if (overlaps) {
+                    el.classList.add("active");
+                }
             });
         }
 
@@ -561,10 +639,33 @@
 
         let fp = null;
 
+        const allowedDates = [];
+
+        // helper: format YYYY-MM-DD
+        const formatDate = (d) => d.toISOString().slice(0, 10);
+
+        // 1. timeline range’y
+        plans.timeline.forEach(m => {
+            const start = new Date(m.start || m.date);
+            const end = new Date(m.date);
+
+            let d = new Date(start);
+
+            while (d <= end) {
+                allowedDates.push(formatDate(d));
+                d.setDate(d.getDate() + 1);
+            }
+        });
+
+        // 2. TODAY 🔥
+        allowedDates.push(formatDate(new Date()));
+
 
         fp = flatpickr("#calendar", {
             inline: true,
             defaultDate: "today",
+            enable: allowedDates,
+
 
             onDayCreate: function(dObj, dStr, fp, dayElem) {
                 const year = dayElem.dateObj.getFullYear();
@@ -577,6 +678,10 @@
 
                 if (match) {
                     const color = statusColors[match.status];
+
+                    if (date === selectedDate) {
+                        dayElem.classList.add("selected-status");
+                    }
 
                     if (color) {
                         dayElem.style.background = color;
@@ -598,9 +703,10 @@
                 const month = String(d.getMonth() + 1).padStart(2, "0");
                 const day = String(d.getDate()).padStart(2, "0");
 
-                const date = `${year}-${month}-${day}`;
+                selectedDate = `${year}-${month}-${day}`;
 
-                highlightTimeline(date);
+                highlightTimeline(selectedDate);
+                fp.redraw();
             }
         });
 

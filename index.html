@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="pl">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PMO Dashboard (JSON-driven)</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            margin: 0;
+            font-family: 'DM Sans', sans-serif;
+            background: #F5F3EF;
+            padding: 30px;
+        }
+
+        .dashboard {
+            max-width: 1000px;
+            margin: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        /* EXEC */
+        .exec {
+            background: #fff;
+            border: 1px solid #E2DDD6;
+            border-radius: 14px;
+            padding: 20px;
+        }
+
+        .status {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .score {
+            font-family: 'DM Serif Display';
+            font-size: 44px;
+            margin: 8px 0;
+        }
+
+        .trend {
+            font-size: 13px;
+            color: #6B6560;
+        }
+
+        .summary {
+            margin-top: 8px;
+            font-size: 14px;
+            color: #6B6560;
+        }
+
+        /* KPI */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+        }
+
+        .kpi {
+            background: #fff;
+            border: 1px solid #E2DDD6;
+            border-radius: 12px;
+            padding: 12px;
+        }
+
+        .kpi-title {
+            font-size: 11px;
+            color: #6B6560;
+        }
+
+        .kpi-value {
+            font-weight: 600;
+            margin-top: 4px;
+        }
+
+        /* GRID */
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .panel {
+            background: #fff;
+            border: 1px solid #E2DDD6;
+            border-radius: 12px;
+            padding: 14px;
+        }
+
+        h3 {
+            margin: 0 0 10px 0;
+            font-size: 12px;
+            color: #6B6560;
+            text-transform: uppercase;
+        }
+
+        /* ITEMS */
+        .item {
+            font-size: 13px;
+            margin-bottom: 8px;
+        }
+
+        .task {
+            padding: 10px;
+            border: 1px solid #E2DDD6;
+            border-radius: 10px;
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+
+        .badge {
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 999px;
+            margin-left: 6px;
+            background: #eee;
+        }
+
+        .todo {
+            background: #F5F3EF;
+        }
+
+        .in_progress {
+            background: #EAF1F7;
+        }
+
+        .blocked {
+            background: #FAECEC;
+        }
+
+        .timeline-item {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            margin-bottom: 8px;
+        }
+
+        .project-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            padding: 0 4px;
+        }
+
+        .project-title {
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .project-link {
+            font-size: 13px;
+            color: #6B6560;
+            text-decoration: none;
+            border: 1px solid #E2DDD6;
+            padding: 6px 10px;
+            border-radius: 8px;
+            background: #fff;
+        }
+
+        .project-link:hover {
+            background: #F5F3EF;
+        }
+
+        .kpi-value {
+            font-weight: 600;
+            margin-top: 4px;
+            font-size: 14px;
+        }
+
+        /* status colors */
+        .status-dot {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 6px;
+            vertical-align: middle;
+        }
+
+        .G {
+            background: #2E7D32;
+        }
+
+        /* green */
+        .A {
+            background: #F9A825;
+        }
+
+        /* amber */
+        .R {
+            background: #C62828;
+        }
+
+        /* red */
+
+        .kpi-value-wrap {
+            display: flex;
+            align-items: center;
+            font-weight: 600;
+        }
+
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="dashboard">
+
+        <!-- HEADER -->
+        <div class="project-header">
+            <div class="project-title" id="projectTitle"></div>
+            <a class="project-link" id="projectLink" href="#" target="_blank">
+                Otwórz kartę projektu →
+            </a>
+        </div>
+
+        <!-- EXEC -->
+        <div class="exec">
+            <div class="status" id="status"></div>
+            <div class="score" id="score"></div>
+            <div class="trend" id="trend"></div>
+            <div class="summary" id="summary"></div>
+        </div>
+
+        <!-- KPI -->
+        <div class="kpi-grid" id="kpis"></div>
+
+
+        <!-- BOTTOM -->
+        <div class="grid">
+            <div class="panel">
+                <h3>Top risks</h3>
+                <div id="risks"></div>
+            </div>
+
+            <div class="panel">
+                <h3>Actions</h3>
+                <div id="actions"></div>
+            </div>
+        </div>
+
+        <!-- PLANS -->
+
+        <div class="grid">
+
+            <!-- TASKS -->
+            <div class="panel">
+                <h3>Tasks</h3>
+                <div id="tasks"></div>
+            </div>
+
+            <!-- TIMELINE -->
+            <div class="panel">
+                <h3>Timeline</h3>
+                <div id="timeline"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <script>
+        /* ───── JSON INPUT (TU PODMIENIASZ DANYMI Z API) ───── */
+
+        const data = {
+            "project": {
+                "name": "Project Alpha",
+                "url": "https://example.com/projects/alpha"
+            },
+            "week": "2026-W19",
+            "status": "A",
+            "score": 78,
+            "prevScore": 83,
+            "kpis": [{
+                    "name": "Delivery",
+                    "value": "A"
+                },
+                {
+                    "name": "Scope",
+                    "value": "G"
+                },
+                {
+                    "name": "Risks",
+                    "value": "A"
+                },
+                {
+                    "name": "Team",
+                    "value": "G"
+                },
+                {
+                    "name": "Stakeholders",
+                    "value": "R"
+                }
+            ],
+            "risks": [
+                "Opóźnienie delivery (2 tyg.)",
+                "Brak decyzji stakeholdera",
+                "Scope creep w module X"
+            ],
+            "actions": [
+                "Eskalacja do sponsora",
+                "Replan sprintów",
+                "Zamrożenie scope"
+            ],
+            "summary": "Projekt wymaga stabilizacji w obszarze delivery i decyzji stakeholderów."
+        };
+
+        const plans = {
+            tasks: [{
+                    name: "API integration",
+                    status: "in_progress",
+                    owner: "Dev Team",
+                    due: "2026-05-10"
+                },
+                {
+                    name: "Stakeholder approval",
+                    status: "blocked",
+                    owner: "PM",
+                    due: "2026-05-08"
+                },
+                {
+                    name: "QA testing",
+                    status: "todo",
+                    owner: "QA",
+                    due: "2026-05-12"
+                }
+            ],
+
+            timeline: [{
+                    milestone: "Kickoff",
+                    date: "2026-04-01",
+                    status: "done"
+                },
+                {
+                    milestone: "MVP ready",
+                    date: "2026-05-05",
+                    status: "done"
+                },
+                {
+                    milestone: "UAT",
+                    date: "2026-05-12",
+                    status: "in_progress"
+                },
+                {
+                    milestone: "Go-live",
+                    date: "2026-05-20",
+                    status: "planned"
+                }
+            ]
+        };
+
+        /* ───── RENDER ───── */
+
+        function renderTasks() {
+            const el = document.getElementById("tasks");
+            el.innerHTML = "";
+
+            plans.tasks.forEach(t => {
+                const div = document.createElement("div");
+                div.className = "task " + t.status;
+
+                const badge =
+                    t.status === "done" ? "✔ DONE" :
+                    t.status === "in_progress" ? "⏳ IN PROGRESS" :
+                    t.status === "blocked" ? "⛔ BLOCKED" :
+                    "• TODO";
+
+                div.innerHTML = `
+            <strong>${t.name}</strong>
+            <span class="badge">${badge}</span><br>
+            Owner: ${t.owner}<br>
+            Due: ${t.due}
+        `;
+
+                el.appendChild(div);
+            });
+        }
+
+        function renderTimeline() {
+            const el = document.getElementById("timeline");
+            el.innerHTML = "";
+
+            plans.timeline.forEach(m => {
+
+                const status =
+                    m.status === "done" ? "✔" :
+                    m.status === "in_progress" ? "⏳" :
+                    "•";
+
+                const div = document.createElement("div");
+                div.className = "timeline-item";
+
+                div.innerHTML = `
+            <span>${status} ${m.milestone}</span>
+            <span>${m.date}</span>
+        `;
+
+                el.appendChild(div);
+            });
+        }
+
+        function render() {
+
+            const statusMap = {
+                G: "🟢 DOBRY",
+                A: "🟡 UWAGA",
+                R: "🔴 ZAGROŻONY"
+            };
+
+            document.getElementById("projectTitle").innerText = data.project.name;
+
+            document.getElementById("projectLink").href = data.project.url;
+
+            // przykładowy link (możesz zastąpić z API)
+            document.getElementById("projectLink").href =
+                "https://example.com/projects/" + encodeURIComponent(data.project);
+            document.getElementById("status").innerText = statusMap[data.status];
+            document.getElementById("score").innerText = data.score;
+
+            const diff = data.score - data.prevScore;
+
+            document.getElementById("trend").innerText =
+                diff === 0 ? "→ bez zmian" :
+                diff > 0 ? `📈 +${diff} vs last week` :
+                `📉 ${diff} vs last week`;
+
+            document.getElementById("summary").innerText = data.summary;
+
+            /* KPI */
+            const kpi = document.getElementById("kpis");
+            kpi.innerHTML = "";
+
+            data.kpis.forEach(k => {
+                const el = document.createElement("div");
+                el.className = "kpi";
+                el.innerHTML = `
+    <div class="kpi-title">${k.name}</div>
+    <div class="kpi-value-wrap">
+        <span class="status-dot ${k.value}"></span>
+        <span class="kpi-value">${k.value}</span>
+    </div>
+`;
+                kpi.appendChild(el);
+            });
+
+
+            /* RISKS */
+            document.getElementById("risks").innerHTML =
+                data.risks.map(r => `<div class="item">⚠ ${r}</div>`).join("");
+
+            /* ACTIONS */
+            document.getElementById("actions").innerHTML =
+                data.actions.map(a => `<div class="item">• ${a}</div>`).join("");
+        }
+
+        render();
+        renderTasks();
+        renderTimeline();
+    </script>
+
+
+</body>
+
+</html>

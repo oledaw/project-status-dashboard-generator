@@ -148,13 +148,14 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 14px;
             padding: 0 4px;
+            width: 100%;
         }
 
         .project-title {
             font-size: 20px;
             font-weight: 600;
+            flex: 1;
         }
 
         .project-link {
@@ -310,10 +311,17 @@
             margin: 0;
         }
 
+        .divider {
+            height: 1px;
+            background: #E2DDD6;
+
+        }
+
         @media (max-width: 768px) {
             body {
                 padding: 12px;
             }
+
 
             .grid {
                 grid-template-columns: 1fr;
@@ -329,12 +337,6 @@
                     "calendar"
                     "timeline"
                     "tasks";
-            }
-
-            .project-header {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 8px;
             }
 
         }
@@ -353,6 +355,8 @@
             </a>
         </div>
 
+        <div class="divider"></div>
+
         <!-- 1. ANKIETA STATUSOWA -->
         <div class="section">
             <h2 class="section-title">Ankieta statusowa</h2>
@@ -366,11 +370,17 @@
 
             <div class="kpi-grid" id="kpis"></div>
         </div>
-
+        <div class="divider"></div>
 
         <!-- 2. REJESTR RYZYK -->
         <div class="section">
-            <h2 class="section-title">Rejestr ryzyk</h2>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <h2 class="section-title">Rejestr ryzyk</h2>
+
+                <a class="project-link" href="https://oledaw.github.io/riskregister/" target="_blank">
+                    Otwórz rejestr ryzyk →
+                </a>
+            </div>
 
             <div class="grid">
                 <div class="panel">
@@ -385,7 +395,7 @@
             </div>
         </div>
 
-
+        <div class="divider"></div>
         <!-- 3. PLANNER -->
         <div class="section">
             <h2 class="section-title">Planner</h2>

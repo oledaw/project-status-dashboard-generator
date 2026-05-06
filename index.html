@@ -357,9 +357,45 @@
 
         <div class="divider"></div>
 
+
+        <div class="section">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <h2 class="section-title">Ocena przewidywalności (11.04.2026)</h2>
+
+                <a class="project-link" href="https://oledaw.github.io/project-predictability-assessment/" target="_blank">
+                    Otwórz ankietę →
+                </a>
+            </div>
+
+            <div class="grid">
+                <!-- SCORE -->
+                <div class="panel">
+                    <h3>Score</h3>
+
+                    <div id="predictabilityScore" class="score" style="font-size:32px; margin:0;"></div>
+
+                    <div id="predictabilityLevel" class="item"></div>
+                </div>
+
+                <div class="panel">
+                    <h3>Scoring obszarów</h3>
+                    <div id="areaScores" class="kpi-grid"></div>
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="divider"></div>
         <!-- 1. ANKIETA STATUSOWA -->
         <div class="section">
-            <h2 class="section-title">Ankieta statusowa</h2>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <h2 class="section-title">Ankieta statusowa (30.04.2026)</h2>
+
+                <a class="project-link" href="https://oledaw.github.io/projectweeklystatus/" target="_blank">
+                    Otwórz ankietę →
+                </a>
+            </div>
 
             <div class="exec">
                 <div class="status" id="status"></div>
@@ -519,6 +555,41 @@
                     date: "2026-05-20",
                     status: "planned",
                     isUpdated: 1
+                }
+            ]
+        };
+
+        const AREA_LABELS = {
+            requirements: 'Zakres i wymagania',
+            tech: 'Technologia',
+            deps: 'Zależności zewnętrzne',
+            team: 'Zespół',
+            planning: 'Planowanie i estymacje',
+            risk: 'Zarządzanie ryzykiem'
+        };
+
+        const predictability = {
+            "score": 3.17,
+            "level": "Wysoka nieprzewidywalność",
+            "levelClass": "level-high",
+            "unanswered": 0,
+            "areas": {
+                "requirements": 4.5,
+                "tech": 2.5,
+                "deps": 3.5,
+                "team": 2.5,
+                "planning": 2.5,
+                "risk": 3.5
+            },
+            "weakAreas": ["tech", "deps", "team", "planning", "risk"],
+            "criticalAreas": [],
+            "risks": [{
+                    "title": "Ryzyko technologiczne – rozwiązanie może nie zadziałać",
+                    "mitigation": "Zrób szybki proof-of-concept..."
+                },
+                {
+                    "title": "Opóźnienia po stronie zewnętrznych dostawców lub zespołów",
+                    "mitigation": "Zmapuj wszystkie zależności..."
                 }
             ]
         };
@@ -720,6 +791,48 @@
             }
         });
 
+        function renderPredictability() {
+
+            document.getElementById("predictabilityScore").innerText =
+                predictability.score;
+
+            document.getElementById("predictabilityLevel").innerHTML =
+                `<strong>${predictability.level}</strong>`;
+
+
+            renderAreaScores();
+        }
+
+        function renderAreaScores() {
+
+            const container = document.getElementById("areaScores");
+            container.innerHTML = "";
+
+            const getColor = (v) => {
+                if (v >= 4) return "R";
+                if (v >= 3) return "A";
+                return "G";
+            };
+
+            Object.entries(predictability.areas).forEach(([key, value]) => {
+
+                const label = AREA_LABELS[key] || key;
+
+                const el = document.createElement("div");
+                el.className = "kpi";
+
+                el.innerHTML = `
+            <div class="kpi-title">${label}</div>
+            <div class="kpi-value-wrap">
+                <span class="status-dot ${getColor(value)}"></span>
+                <span class="kpi-value">${value.toFixed(1)}</span>
+            </div>
+        `;
+
+                container.appendChild(el);
+            });
+        }
+
 
         function render() {
 
@@ -775,6 +888,7 @@
         render();
         renderTasks();
         renderTimeline();
+        renderPredictability();
     </script>
 
 

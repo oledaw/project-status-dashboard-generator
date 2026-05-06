@@ -809,9 +809,9 @@
             container.innerHTML = "";
 
             const getColor = (v) => {
-                if (v >= 4) return "R";
+                if (v >= 4) return "G";
                 if (v >= 3) return "A";
-                return "G";
+                return "R";
             };
 
             Object.entries(predictability.areas).forEach(([key, value]) => {

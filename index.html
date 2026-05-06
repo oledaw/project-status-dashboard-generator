@@ -7,7 +7,8 @@
     <title>PMO Dashboard (JSON-driven)</title>
 
     <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
-
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <style>
         body {
             margin: 0;
@@ -23,6 +24,7 @@
             flex-direction: column;
             gap: 16px;
         }
+
 
         /* EXEC */
         .exec {
@@ -220,6 +222,35 @@
             letter-spacing: 0.3px;
         }
 
+        .timeline-item.active {
+            background: #EAF1F7;
+            border-left: 3px solid #2E7D32;
+            padding-left: 8px;
+            border-radius: 6px;
+        }
+
+        .planner-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-areas:
+                "calendar timeline"
+                "tasks tasks";
+            gap: 12px;
+        }
+
+        /* assign areas */
+        #calendar {
+            grid-area: calendar;
+        }
+
+        .planner-grid .panel:nth-child(2) {
+            grid-area: timeline;
+        }
+
+        .tasks-panel {
+            grid-area: tasks;
+        }
+
         }
     </style>
 </head>
@@ -273,23 +304,32 @@
         <div class="section">
             <h2 class="section-title">Planner</h2>
 
-            <div class="grid">
+            <div class="planner-grid">
+
                 <div class="panel">
-                    <h3>Tasks</h3>
-                    <div id="tasks"></div>
+                    <div id="calendar"></div>
                 </div>
 
                 <div class="panel">
                     <h3>Timeline</h3>
                     <div id="timeline"></div>
                 </div>
+
+                <div class="panel tasks-panel">
+                    <h3>Tasks</h3>
+                    <div id="tasks"></div>
+                </div>
+
             </div>
         </div>
+
+
 
     </div>
 
     <script>
         /* ───── JSON INPUT (TU PODMIENIASZ DANYMI Z API) ───── */
+
 
         const data = {
             "project": {
@@ -418,15 +458,79 @@
 
                 const div = document.createElement("div");
                 div.className = "timeline-item";
+                div.dataset.date = m.date; // 🔥 KLUCZ
 
                 div.innerHTML = `
             <span>${status} ${m.milestone}</span>
             <span>${m.date}</span>
         `;
 
+                div.addEventListener("click", () => {
+                    fp.setDate(m.date, true); // updates calendar + triggers onChange
+                    highlightTimeline(m.date);
+                });
+
                 el.appendChild(div);
             });
         }
+
+        function highlightTimeline(date) {
+
+            document.querySelectorAll(".timeline-item")
+                .forEach(el => el.classList.remove("active"));
+
+            const el = document.querySelector(`.timeline-item[data-date="${date}"]`);
+
+            if (el) {
+                el.classList.add("active");
+
+            }
+        }
+
+
+        const timelineMap = new Map(
+            plans.timeline.map(m => [m.date, m])
+        );
+
+        let fp = null;
+
+
+        fp = flatpickr("#calendar", {
+            inline: true,
+            defaultDate: "today",
+
+            onDayCreate: function(dObj, dStr, fp, dayElem) {
+                const year = dayElem.dateObj.getFullYear();
+                const month = String(dayElem.dateObj.getMonth() + 1).padStart(2, "0");
+                const day = String(dayElem.dateObj.getDate()).padStart(2, "0");
+
+                const date = `${year}-${month}-${day}`;
+
+                const match = timelineMap.get(date);
+
+                if (match) {
+                    dayElem.style.background = "#EAF1F7";
+                    dayElem.style.borderRadius = "6px";
+                    dayElem.title = match.milestone;
+                }
+            },
+
+            onChange: function(selectedDates, dateStr, instance) {
+
+                if (selectedDates.length === 0) return;
+
+                const d = selectedDates[0];
+
+                const year = d.getFullYear();
+                const month = String(d.getMonth() + 1).padStart(2, "0");
+                const day = String(d.getDate()).padStart(2, "0");
+
+                const date = `${year}-${month}-${day}`;
+
+                highlightTimeline(date);
+            }
+        });
+
 
         function render() {
 

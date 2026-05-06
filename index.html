@@ -251,6 +251,16 @@
             grid-area: tasks;
         }
 
+        .dot {
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            background: #D12E2E;
+            border-radius: 50%;
+            margin-right: 6px;
+            vertical-align: middle;
+        }
+
         }
     </style>
 </head>
@@ -398,22 +408,26 @@
             timeline: [{
                     milestone: "Kickoff",
                     date: "2026-04-01",
-                    status: "done"
+                    status: "done",
+                    isUpdated: 0
                 },
                 {
                     milestone: "MVP ready",
                     date: "2026-05-05",
-                    status: "done"
+                    status: "done",
+                    isUpdated: 0
                 },
                 {
                     milestone: "UAT",
                     date: "2026-05-12",
-                    status: "in_progress"
+                    status: "in_progress",
+                    isUpdated: 1
                 },
                 {
                     milestone: "Go-live",
                     date: "2026-05-20",
-                    status: "planned"
+                    status: "planned",
+                    isUpdated: 1
                 }
             ]
         };
@@ -461,9 +475,13 @@
                 div.dataset.date = m.date; // 🔥 KLUCZ
 
                 div.innerHTML = `
-            <span>${status} ${m.milestone}</span>
-            <span>${m.date}</span>
-        `;
+    <span>
+        ${status} ${m.milestone}
+    </span>
+    <span>
+        ${m.isUpdated ? '<span class="dot"></span>' : ''} ${m.date}
+    </span>
+`;
 
                 div.addEventListener("click", () => {
                     fp.setDate(m.date, true); // updates calendar + triggers onChange

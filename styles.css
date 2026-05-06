@@ -214,6 +214,12 @@ h3 {
   box-shadow: none;
 }
 
+.flatpickr-day.selected,
+.flatpickr-day.selected:hover {
+  outline: 2px solid #c62828;
+  outline-offset: -2px;
+}
+
 #timeline    { grid-area: timeline; }
 .tasks-panel { grid-area: tasks; }
 
@@ -229,7 +235,6 @@ h3 {
   vertical-align: middle;
 }
 
-.flatpickr-day.selected-status { filter: brightness(0.75); }
 
 .tasks-collapsible summary {
   cursor: pointer;
@@ -277,6 +282,11 @@ h3 {
 
 .nav-btn:hover  { background: #f5f3ef; transform: translateY(-1px); }
 .nav-btn:active { transform: scale(0.95); }
+.nav-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  pointer-events: none;
+}
 
 .survey-header {
   display: flex;

@@ -1,39 +1,27 @@
 /* ───── STATE ───── */
 
-let selectedDate = null;
 let currentIndex = 0;
 let predictabilityIndex = 0;
 let fp = null;
 
 /* ───── HELPERS ───── */
 
-const formatDate = (d) => d.toISOString().slice(0, 10);
+const formatDate = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
-/* ───── RENDER: PROJECT HEADER ───── */
+/* ───── NAV BUTTONS STATE ───── */
 
-function renderProject() {
-  document.getElementById("projectTitle").innerText = data.project.name;
-  document.getElementById("projectLink").href = data.project.url;
+function updateNavButtons() {
+  document.getElementById("predPrev").disabled = predictabilityIndex >= predictabilityHistory.length - 1;
+  document.getElementById("predNext").disabled = predictabilityIndex <= 0;
+  document.getElementById("surveyPrev").disabled = currentIndex >= surveyHistory.length - 1;
+  document.getElementById("surveyNext").disabled = currentIndex <= 0;
 }
 
 /* ───── RENDER: PREDICTABILITY ───── */
 
-function prevPredictability() {
-  if (predictabilityIndex < predictabilityHistory.length - 1) {
-    predictabilityIndex++;
-    renderPredictability();
-  }
-}
-
-function nextPredictability() {
-  if (predictabilityIndex > 0) {
-    predictabilityIndex--;
-    renderPredictability();
-  }
-}
-
 function renderPredictability() {
   const p = predictabilityHistory[predictabilityIndex];
+  updateNavButtons();
 
   document.getElementById("predictabilityDate").innerText =
     `Ankieta przewidywalności (${p.date})`;
@@ -67,22 +55,9 @@ function renderAreaScores(p) {
 
 /* ───── RENDER: SURVEY ───── */
 
-function prevSurvey() {
-  if (currentIndex < surveyHistory.length - 1) {
-    currentIndex++;
-    renderSurvey();
-  }
-}
-
-function nextSurvey() {
-  if (currentIndex > 0) {
-    currentIndex--;
-    renderSurvey();
-  }
-}
-
 function renderSurvey() {
   const survey = surveyHistory[currentIndex];
+  updateNavButtons();
 
   const statusMap = { G: "🟢 DOBRY", A: "🟡 UWAGA", R: "🔴 ZAGROŻONY" };
 
@@ -192,11 +167,8 @@ function renderTimeline() {
 /* ───── TIMELINE HIGHLIGHT ───── */
 
 function highlightTimeline(date) {
-  document.querySelectorAll(".timeline-item").forEach((el) =>
-    el.classList.remove("active")
-  );
-  const el = document.querySelector(`.timeline-item[data-date="${date}"]`);
-  if (el) el.classList.add("active");
+  const d = new Date(date);
+  highlightTimelineRange(d, d);
 }
 
 function highlightTimelineRange(start, end) {
@@ -247,7 +219,6 @@ function initCalendar() {
 
       if (match) {
         const color = STATUS_COLORS[match.status];
-        if (date === selectedDate) dayElem.classList.add("selected-status");
         if (color) {
           dayElem.style.background   = color;
           dayElem.style.color        = "#fff";
@@ -260,18 +231,24 @@ function initCalendar() {
     onChange(selectedDates) {
       if (!selectedDates.length) return;
       const d = selectedDates[0];
-      selectedDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-      highlightTimeline(selectedDate);
-      fp.redraw();
+      highlightTimeline(formatDate(d));
     },
   });
 }
 
 /* ───── INIT ───── */
 
-renderProject();
+const _p = surveyHistory[0].project;
+document.getElementById("projectTitle").innerText = _p.name;
+document.getElementById("projectLink").href = _p.url;
+
 renderSurvey();
 renderTasks();
 renderTimeline();
 renderPredictability();
 initCalendar();
+
+document.getElementById("predPrev").addEventListener("click", () => { predictabilityIndex++; renderPredictability(); });
+document.getElementById("predNext").addEventListener("click", () => { predictabilityIndex--; renderPredictability(); });
+document.getElementById("surveyPrev").addEventListener("click", () => { currentIndex++; renderSurvey(); });
+document.getElementById("surveyNext").addEventListener("click", () => { currentIndex--; renderSurvey(); });

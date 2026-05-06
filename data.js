@@ -1,12 +1,3 @@
-/* ───── DANE PROJEKTU ───── */
-
-const data = {
-  project: {
-    name: "Project Alpha",
-    url: "https://example.com/projects/alpha",
-  },
-};
-
 /* ───── HISTORIA ANKIET STATUSOWYCH ───── */
 
 const surveyHistory = [
@@ -41,7 +32,6 @@ const surveyHistory = [
   },
   {
     week: "2026-W18",
-    date: "23.04.2026",
     status: "G",
     score: 83,
     prevScore: 80,

@@ -239,8 +239,17 @@
         }
 
         /* assign areas */
+        /* center calendar inside panel */
         #calendar {
-            grid-area: calendar;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* optional: ensure flatpickr doesn't stretch weirdly */
+        .flatpickr-calendar {
+            margin: 0 auto;
+            box-shadow: none;
         }
 
         .planner-grid .panel:nth-child(2) {
@@ -261,6 +270,39 @@
             vertical-align: middle;
         }
 
+        @media (max-width: 768px) {
+            body {
+                padding: 12px;
+            }
+
+            .grid {
+                grid-template-columns: 1fr;
+            }
+
+            .kpi-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .planner-grid {
+                grid-template-columns: 1fr;
+                grid-template-areas:
+                    "calendar"
+                    "timeline"
+                    "tasks";
+            }
+
+            .project-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+        }
+
+        .flatpickr-day.selected,
+        .flatpickr-day.startRange,
+        .flatpickr-day.endRange {
+            border-color: #ff6b00;
+            border-width: 4px;
         }
     </style>
 </head>
@@ -432,6 +474,13 @@
             ]
         };
 
+        const statusColors = {
+            done: "#2E7D32", // zielony
+            in_progress: "#F9A825", // żółty
+            planned: "#6B6560", // szary
+            blocked: "#C62828" // czerwony (jeśli kiedyś dodasz)
+        };
+
         /* ───── RENDER ───── */
 
         function renderTasks() {
@@ -527,8 +576,14 @@
                 const match = timelineMap.get(date);
 
                 if (match) {
-                    dayElem.style.background = "#EAF1F7";
-                    dayElem.style.borderRadius = "6px";
+                    const color = statusColors[match.status];
+
+                    if (color) {
+                        dayElem.style.background = color;
+                        dayElem.style.color = "#fff";
+                        dayElem.style.borderRadius = "6px";
+                    }
+
                     dayElem.title = match.milestone;
                 }
             },
@@ -562,9 +617,6 @@
 
             document.getElementById("projectLink").href = data.project.url;
 
-            // przykładowy link (możesz zastąpić z API)
-            document.getElementById("projectLink").href =
-                "https://example.com/projects/" + encodeURIComponent(data.project);
             document.getElementById("status").innerText = statusMap[data.status];
             document.getElementById("score").innerText = data.score;
 

@@ -60,7 +60,7 @@
         /* KPI */
         .kpi-grid {
             display: grid;
-            grid-template-columns: repeat(5, 1fr);
+            grid-template-columns: repeat(3, 1fr);
             gap: 10px;
             margin-top: 0;
         }
@@ -396,15 +396,24 @@
                     Otwórz ankietę →
                 </a>
             </div>
+            
+            <div class="grid">
+                <!-- SCORE -->
+                <div class="panel">
 
-            <div class="exec">
+
                 <div class="status" id="status"></div>
                 <div class="score" id="score"></div>
                 <div class="trend" id="trend"></div>
                 <div class="summary" id="summary"></div>
+
             </div>
 
+<div class="panel">
+    <h3>Scoring obszarów</h3>
             <div class="kpi-grid" id="kpis"></div>
+            </div>
+        </div>
         </div>
         <div class="divider"></div>
 

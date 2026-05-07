@@ -29,6 +29,17 @@ function renderPredictability() {
   document.getElementById("predictabilityLevel").innerHTML =
     `<strong>${p.level}</strong>`;
 
+  // Comment
+  const predCommentEl      = document.getElementById("predComment");
+  const predCommentDetails = document.getElementById("predCommentDetails");
+  if (p.comment) {
+    predCommentEl.innerText = p.comment;
+    predCommentDetails.removeAttribute("data-empty");
+  } else {
+    predCommentEl.innerHTML = `<div class="empty-state">✔ Brak komentarza do tej ankiety</div>`;
+    predCommentDetails.setAttribute("data-empty", "true");
+  }
+
   renderAreaScores(p);
 }
 
@@ -97,14 +108,17 @@ function renderSurvey() {
   });
 
   // PM comment
-  const commentPanel = document.getElementById("pmCommentPanel");
-  const commentEl    = document.getElementById("pmComment");
+  const commentPanel   = document.getElementById("pmCommentPanel");
+  const commentEl      = document.getElementById("pmComment");
+  const commentDetails = document.getElementById("pmCommentDetails");
   if (survey.comment) {
-    commentEl.innerText      = survey.comment;
-    commentPanel.style.display = "";
+    commentEl.innerText = survey.comment;
+    commentDetails.removeAttribute("data-empty");
   } else {
-    commentPanel.style.display = "none";
+    commentEl.innerHTML = `<div class="empty-state">✔ Brak komentarza PM dla tej ankiety</div>`;
+    commentDetails.setAttribute("data-empty", "true");
   }
+  commentPanel.style.display = "";
 
   // Risks
   const risksEl = document.getElementById("risks");

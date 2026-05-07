@@ -44,6 +44,12 @@
           <h3>Scoring obszarów (1-5)</h3>
           <div id="areaScores" class="kpi-grid"></div>
         </div>
+        <div class="panel" id="predCommentPanel" style="grid-column: 1 / -1;">
+          <details class="comment-collapsible" id="predCommentDetails">
+            <summary><h3>Komentarz</h3></summary>
+            <div id="predComment" style="margin-top: 10px; font-size: 13px; color: #3A3632; line-height: 1.6;"></div>
+          </details>
+        </div>
       </div>
     </div>
 
@@ -73,9 +79,11 @@
           <h3>Scoring obszarów</h3>
           <div class="kpi-grid" id="kpis"></div>
         </div>
-        <div class="panel" id="pmCommentPanel" style="grid-column: 1 / -1; display: none;">
-          <h3>Komentarz PM</h3>
-          <div id="pmComment" style="font-size: 13px; color: #3A3632; line-height: 1.6;"></div>
+        <div class="panel" id="pmCommentPanel" style="grid-column: 1 / -1;">
+          <details class="comment-collapsible" id="pmCommentDetails">
+            <summary><h3>Komentarz PM</h3></summary>
+            <div id="pmComment" style="margin-top: 10px; font-size: 13px; color: #3A3632; line-height: 1.6;"></div>
+          </details>
         </div>
       </div>
     </div>

@@ -236,6 +236,25 @@ h3 {
 }
 
 
+.comment-collapsible summary {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.comment-collapsible summary::-webkit-details-marker { display: none; }
+
+.comment-collapsible summary::after {
+  content: "▸";
+  float: right;
+  transition: transform 0.2s ease;
+}
+
+.comment-collapsible[open] summary::after { transform: rotate(90deg); }
+.comment-collapsible h3  { margin: 0; }
+
 .tasks-collapsible summary {
   cursor: pointer;
   list-style: none;

@@ -29,11 +29,11 @@ function renderPredictability() {
   document.getElementById("predictabilityLevel").innerHTML =
     `<strong>${p.level}</strong>`;
 
-  // Comment
+  // Notes
   const predCommentEl      = document.getElementById("predComment");
   const predCommentDetails = document.getElementById("predCommentDetails");
-  if (p.comment) {
-    predCommentEl.innerText = p.comment;
+  if (p.notes) {
+    predCommentEl.innerText = p.notes;
     predCommentDetails.removeAttribute("data-empty");
   } else {
     predCommentEl.innerHTML = `<div class="empty-state">✔ Brak komentarza do tej ankiety</div>`;

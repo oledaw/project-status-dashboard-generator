@@ -57,38 +57,54 @@ function renderAreaScores(p) {
 
 function renderSurvey() {
   const survey = surveyHistory[currentIndex];
+  const prev   = surveyHistory[currentIndex + 1];
   updateNavButtons();
 
   const statusMap = { G: "🟢 DOBRY", A: "🟡 UWAGA", R: "🔴 ZAGROŻONY" };
 
-  document.getElementById("surveyDate").innerText =
-    `Ankieta statusowa (${survey.week})`;
+  document.getElementById("surveyDate").innerText = `Ankieta statusowa (${survey.week})`;
   document.getElementById("status").innerText = statusMap[survey.status];
   document.getElementById("score").innerText = survey.score;
 
-  const diff = survey.score - survey.prevScore;
-  document.getElementById("trend").innerText =
-    diff === 0 ? "→ bez zmian" :
-    diff > 0   ? `📈 +${diff} vs last week` :
-                 `📉 ${diff} vs last week`;
+  const trendEl = document.getElementById("trend");
+  if (prev) {
+    const diff = survey.score - prev.score;
+    trendEl.innerText =
+      diff === 0 ? "→ bez zmian" :
+      diff > 0   ? `📈 +${diff} vs last week` :
+                   `📉 ${diff} vs last week`;
+    trendEl.style.display = "";
+  } else {
+    trendEl.style.display = "none";
+  }
 
   document.getElementById("summary").innerText = survey.summary;
 
-  // KPIs
+  // Criteria
   const kpiEl = document.getElementById("kpis");
   kpiEl.innerHTML = "";
-  survey.kpis.forEach((k) => {
+  Object.values(survey.criteria).forEach((k) => {
     const el = document.createElement("div");
     el.className = "kpi";
     el.innerHTML = `
       <div class="kpi-title">${k.name}</div>
       <div class="kpi-value-wrap">
         <span class="status-dot ${k.value}"></span>
-        <span class="kpi-value">${k.comment}</span>
+        <span class="kpi-value">${k.label}</span>
       </div>
     `;
     kpiEl.appendChild(el);
   });
+
+  // PM comment
+  const commentPanel = document.getElementById("pmCommentPanel");
+  const commentEl    = document.getElementById("pmComment");
+  if (survey.comment) {
+    commentEl.innerText      = survey.comment;
+    commentPanel.style.display = "";
+  } else {
+    commentPanel.style.display = "none";
+  }
 
   // Risks
   const risksEl = document.getElementById("risks");
@@ -238,9 +254,8 @@ function initCalendar() {
 
 /* ───── INIT ───── */
 
-const _p = surveyHistory[0].project;
-document.getElementById("projectTitle").innerText = _p.name;
-document.getElementById("projectLink").href = _p.url;
+document.getElementById("projectTitle").innerText = project.name;
+document.getElementById("projectLink").href = project.url;
 
 renderSurvey();
 renderTasks();

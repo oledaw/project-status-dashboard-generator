@@ -1,22 +1,124 @@
+/* ───── DANE PROJEKTU ───── */
+
+const project = {
+  name: "Project Alpha",
+  url: "https://example.com/projects/alpha",
+};
+
 /* ───── HISTORIA ANKIET STATUSOWYCH ───── */
 
 const surveyHistory = [
   {
-    project: {
-      name: "Project Alpha",
-      url: "https://example.com/projects/alpha",
+  "week": "Tydzień 4 maj – 8 maj 2026",
+  "status": "A",
+  "score": 73,
+  "summary": "Projekt wymaga zwiększonego monitoringu. Występują obszary ryzyka wymagające działań PM.",
+  "criteria": {
+    "progress": {
+      "name": "Postęp prac",
+      "weight": 0.3,
+      "value": "G",
+      "label": "On Track"
     },
-    week: "2026-W19",
+    "scope": {
+      "name": "Zakres (Scope)",
+      "weight": 0.2,
+      "value": "A",
+      "label": "Pod kontrolą"
+    },
+    "risks": {
+      "name": "Ryzyka",
+      "weight": 0.2,
+      "value": "A",
+      "label": "Monitorowane"
+    },
+    "team": {
+      "name": "Zespół",
+      "weight": 0.15,
+      "value": "G",
+      "label": "Sprawny"
+    },
+    "stakeholders": {
+      "name": "Interesariusze",
+      "weight": 0.1,
+      "value": "A",
+      "label": "Sporadyczne luki"
+    },
+    "quality": {
+      "name": "Jakość",
+      "weight": 0.05,
+      "value": "A",
+      "label": "Dopuszczalna"
+    }
+  },
+  "comment": "Testttt",
+  "risks": [
+    "asdasd"
+  ],
+  "actions": [
+    "adsasdda"
+  ]
+},
+
+  
+   
+{
+  "week": "Tydzień 4 maj – 8 maj 2026",
+  "status": "A",
+  "score": 93,
+  "summary": "Projekt wymaga zwiększonego monitoringu. Występują obszary ryzyka wymagające działań PM.",
+  "criteria": {
+    "progress": {
+      "name": "Postęp prac",
+      "weight": 0.3,
+      "value": "G",
+      "label": "On Track"
+    },
+    "scope": {
+      "name": "Zakres (Scope)",
+      "weight": 0.2,
+      "value": "G",
+      "label": "Stabilny"
+    },
+    "risks": {
+      "name": "Ryzyka",
+      "weight": 0.2,
+      "value": "G",
+      "label": "Pod kontrolą"
+    },
+    "team": {
+      "name": "Zespół",
+      "weight": 0.15,
+      "value": "G",
+      "label": "Sprawny"
+    },
+    "stakeholders": {
+      "name": "Interesariusze",
+      "weight": 0.1,
+      "value": "A",
+      "label": "Sporadyczne luki"
+    },
+    "quality": {
+      "name": "Jakość",
+      "weight": 0.05,
+      "value": "A",
+      "label": "Dopuszczalna"
+    }
+  },
+  "comment": "Test"
+},
+  {
+    week: "Tydzień 4 maj – 8 maj 2026",
     status: "A",
     score: 78,
-    prevScore: 83,
-    kpis: [
-      { name: "Postęp prac", value: "A", comment: "Chwilowe spowolnienie" },
-      { name: "Zakres (Scope)", value: "G", comment: "On Track" },
-      { name: "Ryzyka", value: "A", comment: "Monitorowane" },
-      { name: "Zespół", value: "G", comment: "Sprawny" },
-      { name: "Interesariusze", value: "R", comment: "Blokada" },
-    ],
+    criteria: {
+      progress:     { name: "Postęp prac",    weight: 0.30, value: "A", label: "Chwilowe spowolnienie" },
+      scope:        { name: "Zakres (Scope)", weight: 0.20, value: "G", label: "On Track"              },
+      risks:        { name: "Ryzyka",         weight: 0.20, value: "A", label: "Monitorowane"          },
+      team:         { name: "Zespół",         weight: 0.15, value: "G", label: "Sprawny"               },
+      stakeholders: { name: "Interesariusze", weight: 0.10, value: "R", label: "Blokada"               },
+      quality:      { name: "Jakość",         weight: 0.05, value: "A", label: "Dopuszczalna"          },
+    },
     risks: [
       "Opóźnienie delivery (2 tyg.)",
       "Brak decyzji stakeholdera",
@@ -27,20 +129,8 @@ const surveyHistory = [
       "Replan sprintów",
       "Zamrożenie scope",
     ],
-    summary:
-      "Projekt wymaga stabilizacji w obszarze delivery i decyzji stakeholderów.",
-  },
-  {
-    week: "2026-W18",
-    status: "G",
-    score: 83,
-    prevScore: 80,
-    summary: "Poprawa sytuacji...",
-    kpis: [
-      { name: "Delivery", value: "G", comment: "On Track" },
-      { name: "Scope", value: "G", comment: "Stabilny" },
-    ],
-  },
+    summary: "Projekt wymaga stabilizacji w obszarze delivery i decyzji stakeholderów.",
+  }
 ];
 
 /* ───── HISTORIA ANKIET PRZEWIDYWALNOŚCI ───── */
@@ -78,15 +168,15 @@ const predictabilityHistory = [
 
 const plans = {
   tasks: [
-    { name: "API integration",      status: "in_progress", owner: "Dev Team", due: "2026-05-10" },
-    { name: "Stakeholder approval",  status: "blocked",     owner: "PM",       due: "2026-05-08" },
-    { name: "QA testing",            status: "todo",        owner: "QA",       due: "2026-05-12" },
+    { name: "API integration",     status: "in_progress", owner: "Dev Team", due: "2026-05-10" },
+    { name: "Stakeholder approval", status: "blocked",     owner: "PM",       due: "2026-05-08" },
+    { name: "QA testing",           status: "todo",        owner: "QA",       due: "2026-05-12" },
   ],
   timeline: [
-    { milestone: "Kickoff",   date: "2026-04-01", status: "done",        isUpdated: 0 },
-    { milestone: "MVP ready", date: "2026-05-05", status: "done",        isUpdated: 0 },
+    { milestone: "Kickoff",   date: "2026-04-01",                       status: "done",        isUpdated: 0 },
+    { milestone: "MVP ready", date: "2026-05-05",                       status: "done",        isUpdated: 0 },
     { milestone: "UAT",       date: "2026-05-15", start: "2026-05-12", status: "in_progress", isUpdated: 1 },
-    { milestone: "Go-live",   date: "2026-05-20", status: "planned",     isUpdated: 1 },
+    { milestone: "Go-live",   date: "2026-05-20",                       status: "planned",     isUpdated: 1 },
   ],
 };
 
@@ -94,11 +184,11 @@ const plans = {
 
 const AREA_LABELS = {
   requirements: "Zakres i wymagania",
-  tech: "Technologia",
-  deps: "Zależności zewnętrzne",
-  team: "Zespół",
-  planning: "Planowanie i estymacje",
-  risk: "Zarządzanie ryzykiem",
+  tech:         "Technologia",
+  deps:         "Zależności zewnętrzne",
+  team:         "Zespół",
+  planning:     "Planowanie i estymacje",
+  risk:         "Zarządzanie ryzykiem",
 };
 
 const STATUS_COLORS = {

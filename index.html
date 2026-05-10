@@ -1,14 +1,17 @@
 <!DOCTYPE html>
 <html lang="pl">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>PMO Dashboard</title>
 
-  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500&display=swap"
+    rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
   <link rel="stylesheet" href="styles.css">
 </head>
+
 <body>
 
   <div class="dashboard">
@@ -16,7 +19,12 @@
     <!-- HEADER -->
     <div class="project-header">
       <div class="project-title" id="projectTitle"></div>
-      <a class="project-link" id="projectLink" href="#" target="_blank">Otwórz kartę projektu →</a>
+      <div class="header-actions">
+        <button class="btn btn-sm btn-danger" id="clearStorage" title="Wyczyść całkowicie localStorage">🗑 Wyczyść
+          Storage</button>
+        <button class="btn btn-sm" id="resetDashboard">🔄 Resetuj Dashboard</button>
+        <input type="file" id="importFile" style="display:none" accept=".json">
+      </div>
     </div>
 
     <div class="divider"></div>
@@ -31,7 +39,13 @@
             <button class="nav-btn" id="predNext">›</button>
           </div>
         </div>
-        <a class="project-link" href="https://oledaw.github.io/project-predictability-assessment/" target="_blank">Otwórz ankietę →</a>
+        <div class="survey-actions">
+          <button class="btn btn-sm" id="predImportClip" title="Dodaj ze schowka (JSON)">+ Clip</button>
+          <button class="btn btn-sm" id="predImportFile" title="Importuj z pliku (JSON Array)">⇪ Plik</button>
+          <button class="btn btn-sm btn-danger" id="predDelete" title="Usuń bieżącą">🗑</button>
+          <a class="project-link" href="https://oledaw.github.io/project-predictability-assessment/"
+            target="_blank">→</a>
+        </div>
       </div>
 
       <div class="grid">
@@ -46,7 +60,9 @@
         </div>
         <div class="panel" id="predCommentPanel" style="grid-column: 1 / -1;">
           <details class="comment-collapsible" id="predCommentDetails">
-            <summary><h3>Komentarz</h3></summary>
+            <summary>
+              <h3>Komentarz</h3>
+            </summary>
             <div id="predComment" style="margin-top: 10px; font-size: 13px; color: #3A3632; line-height: 1.6;"></div>
           </details>
         </div>
@@ -65,7 +81,13 @@
             <button class="nav-btn" id="surveyNext">›</button>
           </div>
         </div>
-        <a class="project-link" href="https://oledaw.github.io/projectweeklystatus/" target="_blank">Otwórz ankietę →</a>
+        <div class="survey-actions">
+          <button class="btn btn-sm" id="surveyImportClip" title="Dodaj ze schowka (JSON)">+ Clip</button>
+          <button class="btn btn-sm" id="surveyImportFile" title="Importuj z pliku (JSON Array)">⇪ Plik</button>
+          <button class="btn btn-sm btn-danger" id="surveyDelete" title="Usuń bieżącą">🗑</button>
+          <a class="project-link" href="https://oledaw.github.io/projectweeklystatus/" target="_blank">→</a>
+        </div>
+
       </div>
 
       <div class="grid">
@@ -81,7 +103,9 @@
         </div>
         <div class="panel" id="pmCommentPanel" style="grid-column: 1 / -1;">
           <details class="comment-collapsible" id="pmCommentDetails">
-            <summary><h3>Komentarz PM</h3></summary>
+            <summary>
+              <h3>Komentarz PM</h3>
+            </summary>
             <div id="pmComment" style="margin-top: 10px; font-size: 13px; color: #3A3632; line-height: 1.6;"></div>
           </details>
         </div>
@@ -94,7 +118,7 @@
     <div class="section">
       <div style="display:flex; justify-content:space-between; align-items:center;">
         <h2 class="section-title">Rejestr ryzyk</h2>
-        <a class="project-link" href="https://oledaw.github.io/riskregister/" target="_blank">Otwórz rejestr ryzyk →</a>
+        <a class="project-link" href="https://oledaw.github.io/riskregister/" target="_blank">→</a>
       </div>
       <div class="grid">
         <div class="panel">
@@ -112,7 +136,10 @@
 
     <!-- PLANNER -->
     <div class="section">
-      <h2 class="section-title">Planner</h2>
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h2 class="section-title">Planner</h2>
+        <button class="btn btn-sm" id="addTimelineBtn">+ Dodaj datę</button>
+      </div>
       <div class="planner-grid">
 
         <div class="panel">
@@ -126,7 +153,9 @@
 
         <div class="panel tasks-panel">
           <details class="tasks-collapsible">
-            <summary><h3>Tasks</h3></summary>
+            <summary>
+              <h3>Tasks</h3>
+            </summary>
             <div id="tasks"></div>
           </details>
         </div>
@@ -136,8 +165,46 @@
 
   </div>
 
+  <div id="timelineModal" class="modal">
+    <div class="modal-content">
+      <h3>Dodaj wpis do Timeline</h3>
+      <div class="form-group">
+        <label>Milestone:</label>
+        <input type="text" id="msName" placeholder="np. Kickoff">
+      </div>
+      <div class="form-group grid-2">
+        <div>
+          <label>Data start (opcj.):</label>
+          <input type="text" id="msStart" placeholder="RRRR-MM-DD">
+        </div>
+        <div>
+          <label>Data koniec:</label>
+          <input type="text" id="msEnd" placeholder="RRRR-MM-DD">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Status:</label>
+        <select id="msStatus">
+          <option value="planned">Planned</option>
+          <option value="in_progress">In Progress</option>
+          <option value="done">Done</option>
+          <option value="blocked">Blocked</option>
+        </select>
+      </div>
+      <div class="form-group" style="flex-direction:row; align-items:center; gap:10px;">
+        <input type="checkbox" id="msUpdated" style="width:auto;">
+        <label style="margin-bottom:0;">Oznacz jako zaktualizowane (kropka)</label>
+      </div>
+      <div class="modal-actions">
+        <button class="btn" onclick="closeTimelineModal()">Anuluj</button>
+        <button class="btn btn-secondary" onclick="saveTimelineEntry()">Zapisz</button>
+      </div>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   <script src="data.js"></script>
   <script src="app.js"></script>
 </body>
+
 </html>

@@ -1,27 +1,49 @@
 /* ───── STATE ───── */
 
+let projectData = JSON.parse(localStorage.getItem("pmo_project")) || { ...project };
+let surveyHistoryData = JSON.parse(localStorage.getItem("pmo_survey_history")) || [...surveyHistory];
+let predictabilityHistoryData = JSON.parse(localStorage.getItem("pmo_predictability_history")) || [...predictabilityHistory];
+let plansData = JSON.parse(localStorage.getItem("pmo_plans")) || { ...plans };
+
 let currentIndex = 0;
 let predictabilityIndex = 0;
+let editingIndex = -1;
 let fp = null;
 
 /* ───── HELPERS ───── */
 
 const formatDate = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
+function saveState() {
+  localStorage.setItem("pmo_project", JSON.stringify(projectData));
+  localStorage.setItem("pmo_survey_history", JSON.stringify(surveyHistoryData));
+  localStorage.setItem("pmo_predictability_history", JSON.stringify(predictabilityHistoryData));
+  localStorage.setItem("pmo_plans", JSON.stringify(plansData));
+}
+
 /* ───── NAV BUTTONS STATE ───── */
 
 function updateNavButtons() {
-  document.getElementById("predPrev").disabled = predictabilityIndex >= predictabilityHistory.length - 1;
+  document.getElementById("predPrev").disabled = predictabilityIndex >= predictabilityHistoryData.length - 1;
   document.getElementById("predNext").disabled = predictabilityIndex <= 0;
-  document.getElementById("surveyPrev").disabled = currentIndex >= surveyHistory.length - 1;
+  document.getElementById("surveyPrev").disabled = currentIndex >= surveyHistoryData.length - 1;
   document.getElementById("surveyNext").disabled = currentIndex <= 0;
 }
 
 /* ───── RENDER: PREDICTABILITY ───── */
 
 function renderPredictability() {
-  const p = predictabilityHistory[predictabilityIndex];
+  const p = predictabilityHistoryData[predictabilityIndex];
   updateNavButtons();
+
+  if (!p) {
+    document.getElementById("predictabilityDate").innerText = "Ankieta przewidywalności";
+    document.getElementById("predictabilityScore").innerText = "-";
+    document.getElementById("predictabilityLevel").innerHTML = `<div class="empty-state">✔ Brak ankiet przewidywalności</div>`;
+    document.getElementById("areaScores").innerHTML = "";
+    document.getElementById("predComment").innerHTML = "";
+    return;
+  }
 
   document.getElementById("predictabilityDate").innerText =
     `Ankieta przewidywalności (${p.date})`;
@@ -67,14 +89,27 @@ function renderAreaScores(p) {
 /* ───── RENDER: SURVEY ───── */
 
 function renderSurvey() {
-  const survey = surveyHistory[currentIndex];
-  const prev   = surveyHistory[currentIndex + 1];
+  const survey = surveyHistoryData[currentIndex];
+  const prev   = surveyHistoryData[currentIndex + 1];
   updateNavButtons();
+
+  if (!survey) {
+    document.getElementById("surveyDate").innerText = "Ankieta statusowa";
+    document.getElementById("status").innerText = "BRAK DANYCH";
+    document.getElementById("score").innerText = "-";
+    document.getElementById("trend").style.display = "none";
+    document.getElementById("summary").innerHTML = `<div class="empty-state">✔ Brak ankiet statusowych — dodaj pierwszą</div>`;
+    document.getElementById("kpis").innerHTML = "";
+    document.getElementById("pmComment").innerHTML = "";
+    document.getElementById("risks").innerHTML = `<div class="empty-state">✔ Brak istotnych ryzyk</div>`;
+    document.getElementById("actions").innerHTML = `<div class="empty-state">✔ Brak działań do wykonania</div>`;
+    return;
+  }
 
   const statusMap = { G: "🟢 DOBRY", A: "🟡 UWAGA", R: "🔴 ZAGROŻONY" };
 
   document.getElementById("surveyDate").innerText = `Ankieta statusowa (${survey.week})`;
-  document.getElementById("status").innerText = statusMap[survey.status];
+  document.getElementById("status").innerText = statusMap[survey.status] || survey.status;
   document.getElementById("score").innerText = survey.score;
 
   const trendEl = document.getElementById("trend");
@@ -94,18 +129,20 @@ function renderSurvey() {
   // Criteria
   const kpiEl = document.getElementById("kpis");
   kpiEl.innerHTML = "";
-  Object.values(survey.criteria).forEach((k) => {
-    const el = document.createElement("div");
-    el.className = "kpi";
-    el.innerHTML = `
-      <div class="kpi-title">${k.name}</div>
-      <div class="kpi-value-wrap">
-        <span class="status-dot ${k.value}"></span>
-        <span class="kpi-value">${k.label}</span>
-      </div>
-    `;
-    kpiEl.appendChild(el);
-  });
+  if (survey.criteria) {
+    Object.values(survey.criteria).forEach((k) => {
+      const el = document.createElement("div");
+      el.className = "kpi";
+      el.innerHTML = `
+        <div class="kpi-title">${k.name}</div>
+        <div class="kpi-value-wrap">
+          <span class="status-dot ${k.value}"></span>
+          <span class="kpi-value">${k.label}</span>
+        </div>
+      `;
+      kpiEl.appendChild(el);
+    });
+  }
 
   // PM comment
   const commentPanel   = document.getElementById("pmCommentPanel");
@@ -139,7 +176,12 @@ function renderTasks() {
   const el = document.getElementById("tasks");
   el.innerHTML = "";
 
-  plans.tasks.forEach((t) => {
+  if (!plansData.tasks || plansData.tasks.length === 0) {
+    el.innerHTML = `<div class="empty-state">✔ Brak zadań</div>`;
+    return;
+  }
+
+  plansData.tasks.forEach((t) => {
     const badge =
       t.status === "done"        ? "✔ DONE" :
       t.status === "in_progress" ? "⏳ IN PROGRESS" :
@@ -164,7 +206,16 @@ function renderTimeline() {
   const el = document.getElementById("timeline");
   el.innerHTML = "";
 
-  plans.timeline.forEach((m) => {
+  if (!plansData.timeline || plansData.timeline.length === 0) {
+    el.innerHTML = `<div class="empty-state">✔ Brak wpisów w timeline</div>`;
+    if (fp) {
+        fp.set("enable", [formatDate(new Date())]);
+        fp.redraw();
+    }
+    return;
+  }
+
+  plansData.timeline.forEach((m, idx) => {
     const icon =
       m.status === "done"        ? "✔" :
       m.status === "in_progress" ? "⏳" :
@@ -179,9 +230,11 @@ function renderTimeline() {
 
     div.innerHTML = `
       <span>${icon} ${m.milestone}</span>
-      <span>
+      <span class="timeline-item-actions">
         ${m.isUpdated ? '<span class="dot"></span>' : ""}
         ${rangeText}
+        <span class="delete-btn" onclick="openTimelineModal(${idx}, event)" title="Edytuj">✏️</span>
+        <span class="delete-btn" onclick="deleteTimelineEntry(${idx}, event)" title="Usuń">🗑</span>
       </span>
     `;
 
@@ -192,6 +245,85 @@ function renderTimeline() {
 
     el.appendChild(div);
   });
+}
+
+/* ───── TIMELINE ACTIONS ───── */
+
+function deleteTimelineEntry(idx, event) {
+    event.stopPropagation();
+    if (!confirm("Czy na pewno chcesz usunąć ten wpis?")) return;
+    plansData.timeline.splice(idx, 1);
+    saveState();
+    renderTimeline();
+    initCalendar();
+}
+
+function openTimelineModal(idx = -1, event = null) {
+    if (event) event.stopPropagation();
+    editingIndex = idx;
+    
+    document.getElementById("timelineModal").classList.add("active");
+    
+    // Init flatpickr
+    const fpStart = flatpickr("#msStart", { dateFormat: "Y-m-d" });
+    const fpEnd = flatpickr("#msEnd", { dateFormat: "Y-m-d" });
+
+    if (idx !== -1) {
+        const m = plansData.timeline[idx];
+        document.getElementById("msName").value = m.milestone;
+        fpStart.setDate(m.start || "");
+        fpEnd.setDate(m.date);
+        document.getElementById("msStatus").value = m.status;
+        document.getElementById("msUpdated").checked = !!m.isUpdated;
+    }
+}
+
+function closeTimelineModal() {
+    document.getElementById("timelineModal").classList.remove("active");
+    editingIndex = -1;
+    // Clear inputs
+    document.getElementById("msName").value = "";
+    document.getElementById("msStart").value = "";
+    document.getElementById("msEnd").value = "";
+    document.getElementById("msStatus").value = "planned";
+    document.getElementById("msUpdated").checked = false;
+}
+
+function saveTimelineEntry() {
+    const milestone = document.getElementById("msName").value.trim();
+    const date = document.getElementById("msEnd").value;
+    const start = document.getElementById("msStart").value;
+    const status = document.getElementById("msStatus").value;
+    const isUpdated = document.getElementById("msUpdated").checked ? 1 : 0;
+
+    if (!milestone || !date) {
+        alert("Nazwa i data końcowa są wymagane!");
+        return;
+    }
+
+    const entry = {
+        milestone,
+        date,
+        start: start || null,
+        status: status || "planned",
+        isUpdated: isUpdated
+    };
+
+    if (editingIndex !== -1) {
+        plansData.timeline[editingIndex] = entry;
+    } else {
+        plansData.timeline.push(entry);
+    }
+
+    plansData.timeline.sort((a, b) => new Date(a.date) - new Date(b.date));
+    saveState();
+    renderTimeline();
+    initCalendar();
+    closeTimelineModal();
+}
+
+function addTimelineEntry() {
+    openTimelineModal();
 }
 
 /* ───── TIMELINE HIGHLIGHT ───── */
@@ -221,11 +353,11 @@ function highlightTimelineRange(start, end) {
 /* ───── CALENDAR INIT ───── */
 
 function initCalendar() {
-  const timelineMap = new Map(plans.timeline.map((m) => [m.date, m]));
+  const timelineMap = new Map((plansData.timeline || []).map((m) => [m.date, m]));
 
   const allowedDates = [];
 
-  plans.timeline.forEach((m) => {
+  (plansData.timeline || []).forEach((m) => {
     const start = new Date(m.start || m.date);
     const end   = new Date(m.date);
     let d = new Date(start);
@@ -236,6 +368,8 @@ function initCalendar() {
   });
 
   allowedDates.push(formatDate(new Date())); // today always enabled
+
+  if (fp) fp.destroy();
 
   fp = flatpickr("#calendar", {
     inline: true,
@@ -266,18 +400,145 @@ function initCalendar() {
   });
 }
 
+/* ───── PROJECT NAME EDIT ───── */
+
+function initProjectNameEdit() {
+    const titleEl = document.getElementById("projectTitle");
+    titleEl.addEventListener("click", () => {
+        const currentName = projectData.name;
+        titleEl.innerHTML = `<input type="text" class="project-title-input" id="projectTitleInput" value="${currentName}">`;
+        const input = document.getElementById("projectTitleInput");
+        input.focus();
+        input.select();
+        
+        const saveName = () => {
+            const newName = input.value.trim() || "Bez nazwy";
+            projectData.name = newName;
+            titleEl.innerText = newName;
+            saveState();
+        };
+
+        input.addEventListener("blur", saveName);
+        input.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") saveName();
+            if (e.key === "Escape") titleEl.innerText = currentName;
+        });
+    });
+}
+
+/* ───── SURVEY ACTIONS ───── */
+
+async function importFromClipboard(historyArray, callback) {
+    try {
+        const text = await navigator.clipboard.readText();
+        const data = JSON.parse(text);
+        if (Array.isArray(data)) {
+            historyArray.unshift(...data);
+        } else {
+            historyArray.unshift(data);
+        }
+        saveState();
+        callback();
+        alert("Dane zaimportowane pomyślnie.");
+    } catch (err) {
+        alert("Błąd importu ze schowka. Upewnij się, że masz poprawny JSON.");
+    }
+}
+
+function importFromFile(historyArray, callback) {
+    const input = document.getElementById("importFile");
+    input.onchange = (e) => {
+        const file = e.target.files[0];
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            try {
+                const data = JSON.parse(event.target.result);
+                if (Array.isArray(data)) {
+                    historyArray.length = 0;
+                    historyArray.push(...data);
+                } else {
+                    historyArray.unshift(data);
+                }
+                saveState();
+                callback();
+                alert("Plik zaimportowany.");
+            } catch (err) {
+                alert("Błąd pliku JSON.");
+            }
+        };
+        reader.readAsText(file);
+    };
+    input.click();
+}
+
+function deleteCurrent(historyArray, indexVar, callback) {
+    if (historyArray.length === 0) return;
+    if (!confirm("Czy na pewno chcesz usunąć bieżącą ankietę?")) return;
+    historyArray.splice(indexVar, 1);
+    if (indexVar >= historyArray.length && indexVar > 0) {
+        // adjust index if we deleted the last item
+    }
+    saveState();
+    callback();
+}
+
+/* ───── RESET DASHBOARD ───── */
+
+function resetDashboard() {
+    if (!confirm("CZY NA PEWNO? To wyczyści wszystkie dane dashboardu.")) return;
+    
+    projectData = { name: "Nowy Projekt", url: "#" };
+    surveyHistoryData = [];
+    predictabilityHistoryData = [];
+    plansData = { tasks: [], timeline: [] };
+    
+    currentIndex = 0;
+    predictabilityIndex = 0;
+    
+    saveState();
+    location.reload(); // Najbezpieczniej odświeżyć żeby wszystko się zresetowało do czystych stanów
+}
+
 /* ───── INIT ───── */
 
-document.getElementById("projectTitle").innerText = project.name;
-document.getElementById("projectLink").href = project.url;
+document.getElementById("projectTitle").innerText = projectData.name;
 
 renderSurvey();
 renderTasks();
 renderTimeline();
 renderPredictability();
 initCalendar();
+initProjectNameEdit();
 
+// Main Events
+document.getElementById("resetDashboard").addEventListener("click", resetDashboard);
+document.getElementById("clearStorage").addEventListener("click", () => {
+    if (confirm("CZY NA PEWNO? To usunie WSZYSTKIE dane z przeglądarki (localStorage).")) {
+        localStorage.clear();
+        location.reload();
+    }
+});
+
+// Nav Events
 document.getElementById("predPrev").addEventListener("click", () => { predictabilityIndex++; renderPredictability(); });
 document.getElementById("predNext").addEventListener("click", () => { predictabilityIndex--; renderPredictability(); });
 document.getElementById("surveyPrev").addEventListener("click", () => { currentIndex++; renderSurvey(); });
 document.getElementById("surveyNext").addEventListener("click", () => { currentIndex--; renderSurvey(); });
+
+// Survey Actions Events
+document.getElementById("surveyImportClip").addEventListener("click", () => importFromClipboard(surveyHistoryData, () => renderSurvey()));
+document.getElementById("surveyImportFile").addEventListener("click", () => importFromFile(surveyHistoryData, () => renderSurvey()));
+document.getElementById("surveyDelete").addEventListener("click", () => deleteCurrent(surveyHistoryData, currentIndex, () => {
+    if (currentIndex >= surveyHistoryData.length) currentIndex = Math.max(0, surveyHistoryData.length - 1);
+    renderSurvey();
+}));
+
+document.getElementById("predImportClip").addEventListener("click", () => importFromClipboard(predictabilityHistoryData, () => renderPredictability()));
+document.getElementById("predImportFile").addEventListener("click", () => importFromFile(predictabilityHistoryData, () => renderPredictability()));
+document.getElementById("predDelete").addEventListener("click", () => deleteCurrent(predictabilityHistoryData, predictabilityIndex, () => {
+    if (predictabilityIndex >= predictabilityHistoryData.length) predictabilityIndex = Math.max(0, predictabilityHistoryData.length - 1);
+    renderPredictability();
+}));
+
+// Planner Events
+document.getElementById("addTimelineBtn").addEventListener("click", addTimelineEntry);

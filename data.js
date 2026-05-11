@@ -3,6 +3,28 @@
 const project = {
   name: "Project Alpha",
   url: "https://example.com/projects/alpha",
+  documents: [
+    {
+      label: "Karta Projektu",
+      url: "https://example.com/project-charter",
+    },
+    {
+      label: "Harmonogram",
+      url: "https://example.com/schedule",
+    },
+    {
+      label: "Zakres prac",
+      url: "https://example.com/scope",
+    },
+    {
+      label: "Happy Path",
+      url: "https://example.com/happy-path",
+    },
+    {
+      label: "Rejestr Ryzyk",
+      url: "https://example.com/risk-register",
+    },
+  ],
 };
 
 /* ───── HISTORIA ANKIET STATUSOWYCH ───── */

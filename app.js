@@ -9,6 +9,7 @@ let currentIndex = 0;
 let predictabilityIndex = 0;
 let editingIndex = -1;
 let fp = null;
+let editingDocIndex = -1;
 
 /* ───── HELPERS ───── */
 
@@ -426,6 +427,121 @@ function initProjectNameEdit() {
     });
 }
 
+/* ───── PROJECT DOCS ───── */
+
+function renderProjectDocs() {
+    const container = document.getElementById("projectDocs");
+
+    if (!projectData.documents) {
+        container.innerHTML = "";
+        return;
+    }
+
+    container.innerHTML = projectData.documents.map((doc, index) => {
+        const hasUrl = doc.url && doc.url.trim() !== "";
+
+        return `
+            <div class="project-doc-row">
+
+                ${
+                    hasUrl
+                    ? `
+                        <a
+                          class="project-doc-btn"
+                          href="${doc.url}"
+                          target="_blank"
+                        >
+                          ${doc.label}
+                        </a>
+                    `
+                    : `
+                        <div class="project-doc-btn disabled">
+                          ${doc.label}
+                        </div>
+                    `
+                }
+
+                <button
+                  class="project-doc-edit-btn"
+                  onclick="openDocModal(${index})"
+                  title="Edytuj link"
+                >
+                  ✏️
+                </button>
+
+            </div>
+        `;
+    }).join("");
+}
+
+function updateProjectDoc(index, value) {
+    projectData.documents[index].url = value.trim();
+
+    saveState();
+    renderProjectDocs();
+}
+
+function addProjectDoc() {
+    if (!projectData.documents) {
+        projectData.documents = [];
+    }
+
+    projectData.documents.push({
+        label: "Nowy dokument",
+        url: "https://"
+    });
+
+    saveState();
+    renderProjectDocs();
+}
+
+function deleteProjectDoc(index) {
+    if (!confirm("Usunąć dokument?")) return;
+
+    projectData.documents.splice(index, 1);
+
+    saveState();
+    renderProjectDocs();
+}
+
+/* ───── PROJECT DOCS ───── */
+
+function openDocModal(index) {
+    editingDocIndex = index;
+
+    const doc = projectData.documents[index];
+
+    document.getElementById("docLabel").value = doc.label;
+    document.getElementById("docUrl").value = doc.url || "";
+
+    document.getElementById("docModal")
+        .classList
+        .add("active");
+}
+
+function closeDocModal() {
+    editingDocIndex = -1;
+
+    document.getElementById("docModal")
+        .classList
+        .remove("active");
+}
+
+function saveDocModal() {
+    if (editingDocIndex === -1) return;
+
+    const url = document
+        .getElementById("docUrl")
+        .value
+        .trim();
+
+    projectData.documents[editingDocIndex].url = url;
+
+    saveState();
+    renderProjectDocs();
+    closeDocModal();
+}
+
 /* ───── SURVEY ACTIONS ───── */
 
 async function importFromClipboard(historyArray, callback) {
@@ -509,6 +625,7 @@ renderTimeline();
 renderPredictability();
 initCalendar();
 initProjectNameEdit();
+renderProjectDocs();
 
 // Main Events
 document.getElementById("resetDashboard").addEventListener("click", resetDashboard);

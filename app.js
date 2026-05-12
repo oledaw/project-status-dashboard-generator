@@ -1,46 +1,300 @@
+/* ═══════════════════════════════════════════════════════
+   APP.JS  —  PMO Multi-Project Dashboard
+   ═══════════════════════════════════════════════════════ */
+
 /* ───── STATE ───── */
 
-let projectData = JSON.parse(localStorage.getItem("pmo_project")) || { ...project };
-let surveyHistoryData = JSON.parse(localStorage.getItem("pmo_survey_history")) || [...surveyHistory];
-let predictabilityHistoryData = JSON.parse(localStorage.getItem("pmo_predictability_history")) || [...predictabilityHistory];
-let plansData = JSON.parse(localStorage.getItem("pmo_plans")) || { ...plans };
+let allProjects        = [];
+let activeProjectId    = null;
 
-let currentIndex = 0;
-let predictabilityIndex = 0;
-let editingIndex = -1;
-let fp = null;
-let editingDocIndex = -1;
+// Per-project view state
+let currentIndex          = 0;
+let predictabilityIndex   = 0;
+let editingIndex          = -1;
+let fp                    = null;
+let editingDocIndex       = -1;
+
+/* ───── STORAGE KEYS ───── */
+
+const STORAGE_PROJECTS   = "pmo_projects";
+const STORAGE_ACTIVE_ID  = "pmo_active_project_id";
+
+/* ───── BOOT ───── */
+
+function boot() {
+  const raw = localStorage.getItem(STORAGE_PROJECTS);
+  if (raw) {
+    try { allProjects = JSON.parse(raw); } catch { allProjects = []; }
+  }
+
+  if (!allProjects.length) {
+    allProjects = SEED_DATA;
+    persistProjects();
+  }
+
+  const savedId = localStorage.getItem(STORAGE_ACTIVE_ID);
+  const found   = allProjects.find(p => p.id === savedId);
+  activeProjectId = found ? savedId : allProjects[0].id;
+
+  resetViewIndexes();
+  renderProjectList();
+  renderDashboard();
+}
+
+/* ───── PERSISTENCE ───── */
+
+function persistProjects() {
+  localStorage.setItem(STORAGE_PROJECTS, JSON.stringify(allProjects));
+}
+
+function persistActiveId() {
+  localStorage.setItem(STORAGE_ACTIVE_ID, activeProjectId);
+}
+
+function saveState() {
+  persistProjects();
+  persistActiveId();
+}
+
+/* ───── ACTIVE PROJECT ACCESSOR ───── */
+
+function getActiveProject() {
+  return allProjects.find(p => p.id === activeProjectId) || allProjects[0];
+}
+
+function resetViewIndexes() {
+  currentIndex        = 0;
+  predictabilityIndex = 0;
+  editingIndex        = -1;
+  editingDocIndex     = -1;
+}
+
+/* ───── SWITCH PROJECT ───── */
+
+function switchProject(id) {
+  activeProjectId = id;
+  resetViewIndexes();
+  persistActiveId();
+  renderProjectList();
+  renderDashboard();
+
+  // Close sidebar on mobile
+  if (window.innerWidth <= 768) closeSidebar();
+}
+
+/* ───── RENDER DASHBOARD (all sections) ───── */
+
+function renderDashboard() {
+  const proj = getActiveProject();
+
+  // Header
+  document.getElementById("projectTitle").innerText = proj.project.name;
+
+  renderProjectDocs();
+  renderSurvey();
+  renderTasks();
+  renderTimeline();
+  renderPredictability();
+  initCalendar();
+}
+
+/* ───── RENDER: PROJECT LIST ───── */
+
+function renderProjectList() {
+  const ul = document.getElementById("projectListItems");
+  ul.innerHTML = "";
+
+  allProjects.forEach(proj => {
+    const { status, score } = getProjectStatusSummary(proj);
+    const isActive = proj.id === activeProjectId;
+
+    const statusDot = status
+      ? `<span class="status-dot ${status}" style="flex-shrink:0;"></span>`
+      : `<span class="status-dot" style="background:#ccc;flex-shrink:0;"></span>`;
+
+    const scoreChip = score !== null
+      ? `<span class="project-list-score">${score}</span>`
+      : "";
+
+    const li = document.createElement("li");
+    li.className = "project-list-item" + (isActive ? " active" : "");
+    li.dataset.id = proj.id;
+    li.innerHTML = `
+      <button class="project-list-btn" onclick="switchProject('${proj.id}')">
+        ${statusDot}
+        <span class="project-list-name">${escHtml(proj.project.name)}</span>
+        ${scoreChip}
+      </button>
+      <button class="project-list-delete btn btn-sm btn-danger" onclick="deleteProject('${proj.id}', event)" title="Usuń projekt">🗑</button>
+    `;
+    ul.appendChild(li);
+  });
+}
+
+/* ───── ADD PROJECT ───── */
+
+function addProject() {
+  const name = prompt("Nazwa nowego projektu:");
+  if (!name || !name.trim()) return;
+
+  const newProj = DEFAULT_PROJECT_TEMPLATE();
+  newProj.project.name = name.trim();
+  allProjects.push(newProj);
+
+  saveState();
+  switchProject(newProj.id);
+}
+
+/* ───── DELETE PROJECT ───── */
+
+function deleteProject(id, event) {
+  event.stopPropagation();
+
+  const proj = allProjects.find(p => p.id === id);
+  if (!proj) return;
+  if (!confirm(`Usunąć projekt „${proj.project.name}"? Tej operacji nie można cofnąć.`)) return;
+
+  allProjects = allProjects.filter(p => p.id !== id);
+
+  // Ensure at least one project exists
+  if (!allProjects.length) {
+    const blank = DEFAULT_PROJECT_TEMPLATE();
+    blank.project.name = "Nowy Projekt";
+    allProjects.push(blank);
+  }
+
+  if (activeProjectId === id) {
+    activeProjectId = allProjects[0].id;
+    resetViewIndexes();
+  }
+
+  saveState();
+  renderProjectList();
+  renderDashboard();
+}
+
+/* ───── DUPLICATE PROJECT ───── */
+
+function duplicateProject() {
+  const src  = getActiveProject();
+  const copy = JSON.parse(JSON.stringify(src));
+  copy.id        = crypto.randomUUID();
+  copy.createdAt = new Date().toISOString();
+  copy.project.name += " (kopia)";
+
+  allProjects.push(copy);
+  saveState();
+  switchProject(copy.id);
+}
+
+/* ───── IMPORT PROJECT FROM JSON ───── */
+
+function importProjectFromFile() {
+  const input = document.createElement("input");
+  input.type   = "file";
+  input.accept = ".json";
+  input.onchange = e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try {
+        const data = JSON.parse(ev.target.result);
+        const projects = Array.isArray(data) ? data : [data];
+
+        projects.forEach(p => {
+          // Ensure fresh id to avoid collisions
+          p.id = p.id && !allProjects.find(x => x.id === p.id)
+            ? p.id
+            : crypto.randomUUID();
+          if (!p.createdAt) p.createdAt = new Date().toISOString();
+          allProjects.push(p);
+        });
+
+        saveState();
+        renderProjectList();
+        // Switch to first imported
+        switchProject(projects[0].id);
+        alert(`Zaimportowano ${projects.length} projekt(ów).`);
+      } catch {
+        alert("Błąd pliku JSON. Sprawdź format.");
+      }
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+}
+
+/* ───── EXPORT ACTIVE PROJECT TO JSON ───── */
+
+function exportActiveProject() {
+  const proj = getActiveProject();
+  const blob = new Blob([JSON.stringify(proj, null, 2)], { type: "application/json" });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement("a");
+  a.href     = url;
+  a.download = `${proj.project.name.replace(/\s+/g, "_")}_export.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+/* ───── EXPORT ALL PROJECTS TO JSON ───── */
+
+function exportAllProjects() {
+  const blob = new Blob([JSON.stringify(allProjects, null, 2)], { type: "application/json" });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement("a");
+  a.href     = url;
+  a.download = `pmo_all_projects_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+/* ───── SIDEBAR TOGGLE ───── */
+
+function toggleSidebar() {
+  document.getElementById("appShell").classList.toggle("sidebar-open");
+}
+
+function closeSidebar() {
+  document.getElementById("appShell").classList.remove("sidebar-open");
+}
 
 /* ───── HELPERS ───── */
 
-const formatDate = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+const formatDate = d =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
-function saveState() {
-  localStorage.setItem("pmo_project", JSON.stringify(projectData));
-  localStorage.setItem("pmo_survey_history", JSON.stringify(surveyHistoryData));
-  localStorage.setItem("pmo_predictability_history", JSON.stringify(predictabilityHistoryData));
-  localStorage.setItem("pmo_plans", JSON.stringify(plansData));
+function escHtml(str) {
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }
 
-/* ───── NAV BUTTONS STATE ───── */
+/* ───── NAV BUTTONS ───── */
 
 function updateNavButtons() {
-  document.getElementById("predPrev").disabled = predictabilityIndex >= predictabilityHistoryData.length - 1;
-  document.getElementById("predNext").disabled = predictabilityIndex <= 0;
-  document.getElementById("surveyPrev").disabled = currentIndex >= surveyHistoryData.length - 1;
+  const proj = getActiveProject();
+  document.getElementById("predPrev").disabled  = predictabilityIndex >= proj.predictabilityHistory.length - 1;
+  document.getElementById("predNext").disabled  = predictabilityIndex <= 0;
+  document.getElementById("surveyPrev").disabled = currentIndex >= proj.surveyHistory.length - 1;
   document.getElementById("surveyNext").disabled = currentIndex <= 0;
 }
 
 /* ───── RENDER: PREDICTABILITY ───── */
 
 function renderPredictability() {
-  const p = predictabilityHistoryData[predictabilityIndex];
+  const proj = getActiveProject();
+  const p    = proj.predictabilityHistory[predictabilityIndex];
   updateNavButtons();
 
   if (!p) {
-    document.getElementById("predictabilityDate").innerText = "Ankieta przewidywalności";
+    document.getElementById("predictabilityDate").innerText  = "Ankieta przewidywalności";
     document.getElementById("predictabilityScore").innerText = "-";
-    document.getElementById("predictabilityLevel").innerHTML = `<div class="empty-state">✔ Brak ankiet przewidywalności</div>`;
+    document.getElementById("predictabilityLevel").innerHTML =
+      `<div class="empty-state">✔ Brak ankiet przewidywalności</div>`;
     document.getElementById("areaScores").innerHTML = "";
     document.getElementById("predComment").innerHTML = "";
     return;
@@ -49,10 +303,8 @@ function renderPredictability() {
   document.getElementById("predictabilityDate").innerText =
     `Ankieta przewidywalności (${p.date})`;
   document.getElementById("predictabilityScore").innerText = p.score;
-  document.getElementById("predictabilityLevel").innerHTML =
-    `<strong>${p.level}</strong>`;
+  document.getElementById("predictabilityLevel").innerHTML = `<strong>${p.level}</strong>`;
 
-  // Notes
   const predCommentEl      = document.getElementById("predComment");
   const predCommentDetails = document.getElementById("predCommentDetails");
   if (p.notes) {
@@ -69,12 +321,11 @@ function renderPredictability() {
 function renderAreaScores(p) {
   const container = document.getElementById("areaScores");
   container.innerHTML = "";
-
-  const getColor = (v) => (v >= 4 ? "G" : v >= 3 ? "A" : "R");
+  const getColor = v => (v >= 4 ? "G" : v >= 3 ? "A" : "R");
 
   Object.entries(p.areas).forEach(([key, value]) => {
     const label = AREA_LABELS[key] || key;
-    const el = document.createElement("div");
+    const el    = document.createElement("div");
     el.className = "kpi";
     el.innerHTML = `
       <div class="kpi-title">${label}</div>
@@ -90,35 +341,39 @@ function renderAreaScores(p) {
 /* ───── RENDER: SURVEY ───── */
 
 function renderSurvey() {
-  const survey = surveyHistoryData[currentIndex];
-  const prev   = surveyHistoryData[currentIndex + 1];
+  const proj   = getActiveProject();
+  const survey = proj.surveyHistory[currentIndex];
+  const prev   = proj.surveyHistory[currentIndex + 1];
   updateNavButtons();
 
   if (!survey) {
-    document.getElementById("surveyDate").innerText = "Ankieta statusowa";
-    document.getElementById("status").innerText = "BRAK DANYCH";
-    document.getElementById("score").innerText = "-";
-    document.getElementById("trend").style.display = "none";
-    document.getElementById("summary").innerHTML = `<div class="empty-state">✔ Brak ankiet statusowych — dodaj pierwszą</div>`;
-    document.getElementById("kpis").innerHTML = "";
-    document.getElementById("pmComment").innerHTML = "";
-    document.getElementById("risks").innerHTML = `<div class="empty-state">✔ Brak istotnych ryzyk</div>`;
-    document.getElementById("actions").innerHTML = `<div class="empty-state">✔ Brak działań do wykonania</div>`;
+    document.getElementById("surveyDate").innerText   = "Ankieta statusowa";
+    document.getElementById("status").innerText       = "BRAK DANYCH";
+    document.getElementById("score").innerText        = "-";
+    document.getElementById("trend").style.display    = "none";
+    document.getElementById("summary").innerHTML      =
+      `<div class="empty-state">✔ Brak ankiet statusowych — dodaj pierwszą</div>`;
+    document.getElementById("kpis").innerHTML         = "";
+    document.getElementById("pmComment").innerHTML    = "";
+    document.getElementById("risks").innerHTML        =
+      `<div class="empty-state">✔ Brak istotnych ryzyk</div>`;
+    document.getElementById("actions").innerHTML      =
+      `<div class="empty-state">✔ Brak działań do wykonania</div>`;
     return;
   }
 
   const statusMap = { G: "🟢 DOBRY", A: "🟡 UWAGA", R: "🔴 ZAGROŻONY" };
 
   document.getElementById("surveyDate").innerText = `Ankieta statusowa (${survey.week})`;
-  document.getElementById("status").innerText = statusMap[survey.status] || survey.status;
-  document.getElementById("score").innerText = survey.score;
+  document.getElementById("status").innerText     = statusMap[survey.status] || survey.status;
+  document.getElementById("score").innerText      = survey.score;
 
   const trendEl = document.getElementById("trend");
   if (prev) {
     const diff = survey.score - prev.score;
-    trendEl.innerText =
-      diff === 0 ? "→ bez zmian" :
-      diff > 0   ? `📈 +${diff} vs last week` :
+    trendEl.innerText  =
+      diff === 0 ? "→ bez zmian"          :
+      diff  > 0  ? `📈 +${diff} vs last week` :
                    `📉 ${diff} vs last week`;
     trendEl.style.display = "";
   } else {
@@ -131,7 +386,7 @@ function renderSurvey() {
   const kpiEl = document.getElementById("kpis");
   kpiEl.innerHTML = "";
   if (survey.criteria) {
-    Object.values(survey.criteria).forEach((k) => {
+    Object.values(survey.criteria).forEach(k => {
       const el = document.createElement("div");
       el.className = "kpi";
       el.innerHTML = `
@@ -146,7 +401,6 @@ function renderSurvey() {
   }
 
   // PM comment
-  const commentPanel   = document.getElementById("pmCommentPanel");
   const commentEl      = document.getElementById("pmComment");
   const commentDetails = document.getElementById("pmCommentDetails");
   if (survey.comment) {
@@ -156,46 +410,45 @@ function renderSurvey() {
     commentEl.innerHTML = `<div class="empty-state">✔ Brak komentarza PM dla tej ankiety</div>`;
     commentDetails.setAttribute("data-empty", "true");
   }
-  commentPanel.style.display = "";
 
   // Risks
-  const risksEl = document.getElementById("risks");
-  risksEl.innerHTML = !survey.risks || survey.risks.length === 0
-    ? `<div class="empty-state">✔ Brak istotnych ryzyk</div>`
-    : survey.risks.map((r) => `<div class="item">⚠ ${r}</div>`).join("");
+  document.getElementById("risks").innerHTML =
+    !survey.risks || !survey.risks.length
+      ? `<div class="empty-state">✔ Brak istotnych ryzyk</div>`
+      : survey.risks.map(r => `<div class="item">⚠ ${r}</div>`).join("");
 
   // Actions
-  const actionsEl = document.getElementById("actions");
-  actionsEl.innerHTML = !survey.actions || survey.actions.length === 0
-    ? `<div class="empty-state">✔ Brak działań do wykonania</div>`
-    : survey.actions.map((a) => `<div class="item">• ${a}</div>`).join("");
+  document.getElementById("actions").innerHTML =
+    !survey.actions || !survey.actions.length
+      ? `<div class="empty-state">✔ Brak działań do wykonania</div>`
+      : survey.actions.map(a => `<div class="item">• ${a}</div>`).join("");
 }
 
 /* ───── RENDER: TASKS ───── */
 
 function renderTasks() {
-  const el = document.getElementById("tasks");
+  const proj = getActiveProject();
+  const el   = document.getElementById("tasks");
   el.innerHTML = "";
 
-  if (!plansData.tasks || plansData.tasks.length === 0) {
+  if (!proj.plans.tasks || !proj.plans.tasks.length) {
     el.innerHTML = `<div class="empty-state">✔ Brak zadań</div>`;
     return;
   }
 
-  plansData.tasks.forEach((t) => {
+  proj.plans.tasks.forEach(t => {
     const badge =
-      t.status === "done"        ? "✔ DONE" :
+      t.status === "done"        ? "✔ DONE"        :
       t.status === "in_progress" ? "⏳ IN PROGRESS" :
-      t.status === "blocked"     ? "⛔ BLOCKED" :
+      t.status === "blocked"     ? "⛔ BLOCKED"     :
                                    "• TODO";
-
     const div = document.createElement("div");
     div.className = `task ${t.status}`;
     div.innerHTML = `
-      <strong>${t.name}</strong>
+      <strong>${escHtml(t.name)}</strong>
       <span class="badge">${badge}</span><br>
-      Owner: ${t.owner}<br>
-      Due: ${t.due}
+      Owner: ${escHtml(t.owner)}<br>
+      Due: ${escHtml(t.due)}
     `;
     el.appendChild(div);
   });
@@ -204,33 +457,27 @@ function renderTasks() {
 /* ───── RENDER: TIMELINE ───── */
 
 function renderTimeline() {
-  const el = document.getElementById("timeline");
+  const proj = getActiveProject();
+  const el   = document.getElementById("timeline");
   el.innerHTML = "";
 
-  if (!plansData.timeline || plansData.timeline.length === 0) {
+  if (!proj.plans.timeline || !proj.plans.timeline.length) {
     el.innerHTML = `<div class="empty-state">✔ Brak wpisów w timeline</div>`;
-    if (fp) {
-        fp.set("enable", [formatDate(new Date())]);
-        fp.redraw();
-    }
+    if (fp) { fp.set("enable", [formatDate(new Date())]); fp.redraw(); }
     return;
   }
 
-  plansData.timeline.forEach((m, idx) => {
-    const icon =
-      m.status === "done"        ? "✔" :
-      m.status === "in_progress" ? "⏳" :
-                                   "•";
-
+  proj.plans.timeline.forEach((m, idx) => {
+    const icon      = m.status === "done" ? "✔" : m.status === "in_progress" ? "⏳" : "•";
     const rangeText = m.start ? `${m.start} → ${m.date}` : m.date;
 
     const div = document.createElement("div");
-    div.className = "timeline-item";
+    div.className    = "timeline-item";
     div.dataset.date  = m.date;
     div.dataset.start = m.start || m.date;
 
     div.innerHTML = `
-      <span>${icon} ${m.milestone}</span>
+      <span>${icon} ${escHtml(m.milestone)}</span>
       <span class="timeline-item-actions">
         ${m.isUpdated ? '<span class="dot"></span>' : ""}
         ${rangeText}
@@ -251,80 +498,63 @@ function renderTimeline() {
 /* ───── TIMELINE ACTIONS ───── */
 
 function deleteTimelineEntry(idx, event) {
-    event.stopPropagation();
-    if (!confirm("Czy na pewno chcesz usunąć ten wpis?")) return;
-    plansData.timeline.splice(idx, 1);
-    saveState();
-    renderTimeline();
-    initCalendar();
+  event.stopPropagation();
+  if (!confirm("Czy na pewno chcesz usunąć ten wpis?")) return;
+  getActiveProject().plans.timeline.splice(idx, 1);
+  saveState();
+  renderTimeline();
+  initCalendar();
 }
 
 function openTimelineModal(idx = -1, event = null) {
-    if (event) event.stopPropagation();
-    editingIndex = idx;
-    
-    document.getElementById("timelineModal").classList.add("active");
-    
-    // Init flatpickr
-    const fpStart = flatpickr("#msStart", { dateFormat: "Y-m-d" });
-    const fpEnd = flatpickr("#msEnd", { dateFormat: "Y-m-d" });
+  if (event) event.stopPropagation();
+  editingIndex = idx;
 
-    if (idx !== -1) {
-        const m = plansData.timeline[idx];
-        document.getElementById("msName").value = m.milestone;
-        fpStart.setDate(m.start || "");
-        fpEnd.setDate(m.date);
-        document.getElementById("msStatus").value = m.status;
-        document.getElementById("msUpdated").checked = !!m.isUpdated;
-    }
+  document.getElementById("timelineModal").classList.add("active");
+
+  const fpStart = flatpickr("#msStart", { dateFormat: "Y-m-d" });
+  const fpEnd   = flatpickr("#msEnd",   { dateFormat: "Y-m-d" });
+
+  if (idx !== -1) {
+    const m = getActiveProject().plans.timeline[idx];
+    document.getElementById("msName").value         = m.milestone;
+    document.getElementById("msStatus").value       = m.status;
+    document.getElementById("msUpdated").checked    = !!m.isUpdated;
+    fpStart.setDate(m.start || "");
+    fpEnd.setDate(m.date);
+  }
 }
 
 function closeTimelineModal() {
-    document.getElementById("timelineModal").classList.remove("active");
-    editingIndex = -1;
-    // Clear inputs
-    document.getElementById("msName").value = "";
-    document.getElementById("msStart").value = "";
-    document.getElementById("msEnd").value = "";
-    document.getElementById("msStatus").value = "planned";
-    document.getElementById("msUpdated").checked = false;
+  document.getElementById("timelineModal").classList.remove("active");
+  editingIndex = -1;
+  document.getElementById("msName").value         = "";
+  document.getElementById("msStart").value        = "";
+  document.getElementById("msEnd").value          = "";
+  document.getElementById("msStatus").value       = "planned";
+  document.getElementById("msUpdated").checked    = false;
 }
 
 function saveTimelineEntry() {
-    const milestone = document.getElementById("msName").value.trim();
-    const date = document.getElementById("msEnd").value;
-    const start = document.getElementById("msStart").value;
-    const status = document.getElementById("msStatus").value;
-    const isUpdated = document.getElementById("msUpdated").checked ? 1 : 0;
+  const milestone = document.getElementById("msName").value.trim();
+  const date      = document.getElementById("msEnd").value;
+  const start     = document.getElementById("msStart").value;
+  const status    = document.getElementById("msStatus").value;
+  const isUpdated = document.getElementById("msUpdated").checked ? 1 : 0;
 
-    if (!milestone || !date) {
-        alert("Nazwa i data końcowa są wymagane!");
-        return;
-    }
+  if (!milestone || !date) { alert("Nazwa i data końcowa są wymagane!"); return; }
 
-    const entry = {
-        milestone,
-        date,
-        start: start || null,
-        status: status || "planned",
-        isUpdated: isUpdated
-    };
+  const entry = { milestone, date, start: start || null, status: status || "planned", isUpdated };
+  const tl    = getActiveProject().plans.timeline;
 
-    if (editingIndex !== -1) {
-        plansData.timeline[editingIndex] = entry;
-    } else {
-        plansData.timeline.push(entry);
-    }
+  if (editingIndex !== -1) tl[editingIndex] = entry;
+  else tl.push(entry);
 
-    plansData.timeline.sort((a, b) => new Date(a.date) - new Date(b.date));
-    saveState();
-    renderTimeline();
-    initCalendar();
-    closeTimelineModal();
-}
-
-function addTimelineEntry() {
-    openTimelineModal();
+  tl.sort((a, b) => new Date(a.date) - new Date(b.date));
+  saveState();
+  renderTimeline();
+  initCalendar();
+  closeTimelineModal();
 }
 
 /* ───── TIMELINE HIGHLIGHT ───── */
@@ -335,30 +565,24 @@ function highlightTimeline(date) {
 }
 
 function highlightTimelineRange(start, end) {
-  document.querySelectorAll(".timeline-item").forEach((el) =>
-    el.classList.remove("active")
-  );
-
+  document.querySelectorAll(".timeline-item").forEach(el => el.classList.remove("active"));
   const startTime = start.getTime();
   const endTime   = end.getTime();
-
-  document.querySelectorAll(".timeline-item").forEach((el) => {
+  document.querySelectorAll(".timeline-item").forEach(el => {
     const mStart = new Date(el.dataset.start).getTime();
     const mEnd   = new Date(el.dataset.date).getTime();
-    if (mStart <= endTime && mEnd >= startTime) {
-      el.classList.add("active");
-    }
+    if (mStart <= endTime && mEnd >= startTime) el.classList.add("active");
   });
 }
 
-/* ───── CALENDAR INIT ───── */
+/* ───── CALENDAR ───── */
 
 function initCalendar() {
-  const timelineMap = new Map((plansData.timeline || []).map((m) => [m.date, m]));
-
+  const proj        = getActiveProject();
+  const timelineMap = new Map((proj.plans.timeline || []).map(m => [m.date, m]));
   const allowedDates = [];
 
-  (plansData.timeline || []).forEach((m) => {
+  (proj.plans.timeline || []).forEach(m => {
     const start = new Date(m.start || m.date);
     const end   = new Date(m.date);
     let d = new Date(start);
@@ -368,20 +592,19 @@ function initCalendar() {
     }
   });
 
-  allowedDates.push(formatDate(new Date())); // today always enabled
+  allowedDates.push(formatDate(new Date()));
 
   if (fp) fp.destroy();
 
   fp = flatpickr("#calendar", {
-    inline: true,
+    inline:      true,
     defaultDate: "today",
-    enable: allowedDates,
+    enable:      allowedDates,
 
     onDayCreate(dObj, dStr, instance, dayElem) {
-      const d = dayElem.dateObj;
-      const date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-      const match = timelineMap.get(date);
-
+      const d     = dayElem.dateObj;
+      const key   = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+      const match = timelineMap.get(key);
       if (match) {
         const color = STATUS_COLORS[match.status];
         if (color) {
@@ -395,267 +618,257 @@ function initCalendar() {
 
     onChange(selectedDates) {
       if (!selectedDates.length) return;
-      const d = selectedDates[0];
-      highlightTimeline(formatDate(d));
+      highlightTimeline(formatDate(selectedDates[0]));
     },
   });
 }
 
-/* ───── PROJECT NAME EDIT ───── */
+/* ───── PROJECT NAME INLINE EDIT ───── */
 
 function initProjectNameEdit() {
-    const titleEl = document.getElementById("projectTitle");
-    titleEl.addEventListener("click", () => {
-        const currentName = projectData.name;
-        titleEl.innerHTML = `<input type="text" class="project-title-input" id="projectTitleInput" value="${currentName}">`;
-        const input = document.getElementById("projectTitleInput");
-        input.focus();
-        input.select();
-        
-        const saveName = () => {
-            const newName = input.value.trim() || "Bez nazwy";
-            projectData.name = newName;
-            titleEl.innerText = newName;
-            saveState();
-        };
+  const titleEl = document.getElementById("projectTitle");
+  titleEl.addEventListener("click", () => {
+    const proj        = getActiveProject();
+    const currentName = proj.project.name;
 
-        input.addEventListener("blur", saveName);
-        input.addEventListener("keydown", (e) => {
-            if (e.key === "Enter") saveName();
-            if (e.key === "Escape") titleEl.innerText = currentName;
-        });
+    titleEl.innerHTML = `<input type="text" class="project-title-input" id="projectTitleInput" value="${escHtml(currentName)}">`;
+    const input = document.getElementById("projectTitleInput");
+    input.focus();
+    input.select();
+
+    const saveName = () => {
+      const newName = input.value.trim() || "Bez nazwy";
+      proj.project.name = newName;
+      titleEl.innerText = newName;
+      saveState();
+      renderProjectList();          // refresh list with new name
+    };
+
+    input.addEventListener("blur",    saveName);
+    input.addEventListener("keydown", e => {
+      if (e.key === "Enter")  saveName();
+      if (e.key === "Escape") titleEl.innerText = currentName;
     });
+  });
 }
 
 /* ───── PROJECT DOCS ───── */
 
 function renderProjectDocs() {
-    const container = document.getElementById("projectDocs");
+  const proj      = getActiveProject();
+  const container = document.getElementById("projectDocs");
 
-    if (!projectData.documents) {
-        container.innerHTML = "";
-        return;
+  if (!proj.project.documents) { container.innerHTML = ""; return; }
+
+  container.innerHTML = proj.project.documents.map((doc, index) => {
+    const hasUrl = doc.url && doc.url.trim() !== "";
+
+    if (hasUrl) {
+      return `
+        <div class="project-doc-row">
+          <a class="project-doc-btn" href="${doc.url}" target="_blank">
+            ${escHtml(doc.label)}
+            <span class="project-doc-edit-icon" onclick="event.preventDefault(); openDocModal(${index})">✏</span>
+          </a>
+        </div>
+      `;
+    } else {
+      return `
+        <div class="project-doc-row">
+          <button class="project-doc-btn disabled" onclick="openDocModal(${index})" style="pointer-events:auto; opacity:0.6;">
+            ${escHtml(doc.label)}
+            <span class="project-doc-edit-icon" style="opacity:1;">✏</span>
+          </button>
+        </div>
+      `;
     }
-
-    container.innerHTML = projectData.documents.map((doc, index) => {
-        const hasUrl = doc.url && doc.url.trim() !== "";
-
-        return `
-            <div class="project-doc-row">
-
-                ${
-                    hasUrl
-                    ? `
-                        <a
-                          class="project-doc-btn"
-                          href="${doc.url}"
-                          target="_blank"
-                        >
-                          ${doc.label}
-                        </a>
-                    `
-                    : `
-                        <div class="project-doc-btn disabled">
-                          ${doc.label}
-                        </div>
-                    `
-                }
-
-                <button
-                  class="project-doc-edit-btn"
-                  onclick="openDocModal(${index})"
-                  title="Edytuj link"
-                >
-                  ✏️
-                </button>
-
-            </div>
-        `;
-    }).join("");
+  }).join("");
 }
-
-function updateProjectDoc(index, value) {
-    projectData.documents[index].url = value.trim();
-
-    saveState();
-    renderProjectDocs();
-}
-
-function addProjectDoc() {
-    if (!projectData.documents) {
-        projectData.documents = [];
-    }
-
-    projectData.documents.push({
-        label: "Nowy dokument",
-        url: "https://"
-    });
-
-    saveState();
-    renderProjectDocs();
-}
-
-function deleteProjectDoc(index) {
-    if (!confirm("Usunąć dokument?")) return;
-
-    projectData.documents.splice(index, 1);
-
-    saveState();
-    renderProjectDocs();
-}
-
-/* ───── PROJECT DOCS ───── */
 
 function openDocModal(index) {
-    editingDocIndex = index;
-
-    const doc = projectData.documents[index];
-
-    document.getElementById("docLabel").value = doc.label;
-    document.getElementById("docUrl").value = doc.url || "";
-
-    document.getElementById("docModal")
-        .classList
-        .add("active");
+  editingDocIndex = index;
+  const doc = getActiveProject().project.documents[index];
+  document.getElementById("docLabel").value = doc.label;
+  document.getElementById("docUrl").value   = doc.url || "";
+  document.getElementById("docModal").classList.add("active");
 }
 
 function closeDocModal() {
-    editingDocIndex = -1;
-
-    document.getElementById("docModal")
-        .classList
-        .remove("active");
+  editingDocIndex = -1;
+  document.getElementById("docModal").classList.remove("active");
 }
 
 function saveDocModal() {
-    if (editingDocIndex === -1) return;
-
-    const url = document
-        .getElementById("docUrl")
-        .value
-        .trim();
-
-    projectData.documents[editingDocIndex].url = url;
-
-    saveState();
-    renderProjectDocs();
-    closeDocModal();
+  if (editingDocIndex === -1) return;
+  getActiveProject().project.documents[editingDocIndex].url =
+    document.getElementById("docUrl").value.trim();
+  saveState();
+  renderProjectDocs();
+  closeDocModal();
 }
 
-/* ───── SURVEY ACTIONS ───── */
+/* ───── SURVEY IMPORT ───── */
 
-async function importFromClipboard(historyArray, callback) {
-    try {
-        const text = await navigator.clipboard.readText();
-        const data = JSON.parse(text);
-        if (Array.isArray(data)) {
-            historyArray.unshift(...data);
-        } else {
-            historyArray.unshift(data);
-        }
-        saveState();
-        callback();
-        alert("Dane zaimportowane pomyślnie.");
-    } catch (err) {
-        alert("Błąd importu ze schowka. Upewnij się, że masz poprawny JSON.");
-    }
-}
-
-function importFromFile(historyArray, callback) {
-    const input = document.getElementById("importFile");
-    input.onchange = (e) => {
-        const file = e.target.files[0];
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            try {
-                const data = JSON.parse(event.target.result);
-                if (Array.isArray(data)) {
-                    historyArray.length = 0;
-                    historyArray.push(...data);
-                } else {
-                    historyArray.unshift(data);
-                }
-                saveState();
-                callback();
-                alert("Plik zaimportowany.");
-            } catch (err) {
-                alert("Błąd pliku JSON.");
-            }
-        };
-        reader.readAsText(file);
-    };
-    input.click();
-}
-
-function deleteCurrent(historyArray, indexVar, callback) {
-    if (historyArray.length === 0) return;
-    if (!confirm("Czy na pewno chcesz usunąć bieżącą ankietę?")) return;
-    historyArray.splice(indexVar, 1);
-    if (indexVar >= historyArray.length && indexVar > 0) {
-        // adjust index if we deleted the last item
-    }
+async function importFromClipboard(getArray, setArray, callback) {
+  try {
+    const text = await navigator.clipboard.readText();
+    const data = JSON.parse(text);
+    const arr  = getArray();
+    Array.isArray(data) ? arr.unshift(...data) : arr.unshift(data);
     saveState();
     callback();
+    alert("Dane zaimportowane pomyślnie.");
+  } catch {
+    alert("Błąd importu ze schowka. Upewnij się, że masz poprawny JSON.");
+  }
 }
 
-/* ───── RESET DASHBOARD ───── */
+function importFromFile(getArray, callback) {
+  const input = document.createElement("input");
+  input.type   = "file";
+  input.accept = ".json";
+  input.onchange = e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try {
+        const data = JSON.parse(ev.target.result);
+        const arr  = getArray();
+        if (Array.isArray(data)) { arr.length = 0; arr.push(...data); }
+        else arr.unshift(data);
+        saveState();
+        callback();
+        alert("Plik zaimportowany.");
+      } catch { alert("Błąd pliku JSON."); }
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+}
+
+function deleteCurrent(getArray, indexVar, setIndex, callback) {
+  const arr = getArray();
+  if (!arr.length) return;
+  if (!confirm("Czy na pewno chcesz usunąć bieżącą ankietę?")) return;
+  arr.splice(indexVar, 1);
+  saveState();
+  callback();
+}
+
+/* ───── RESET / CLEAR ───── */
 
 function resetDashboard() {
-    if (!confirm("CZY NA PEWNO? To wyczyści wszystkie dane dashboardu.")) return;
-    
-    projectData = { name: "Nowy Projekt", url: "#" };
-    surveyHistoryData = [];
-    predictabilityHistoryData = [];
-    plansData = { tasks: [], timeline: [] };
-    
-    currentIndex = 0;
-    predictabilityIndex = 0;
-    
-    saveState();
-    location.reload(); // Najbezpieczniej odświeżyć żeby wszystko się zresetowało do czystych stanów
+  if (!confirm("CZY NA PEWNO? Aktywny projekt zostanie przywrócony do stanu pustego.")) return;
+  const proj = getActiveProject();
+  proj.surveyHistory          = [];
+  proj.predictabilityHistory  = [];
+  proj.plans                  = { tasks: [], timeline: [] };
+  resetViewIndexes();
+  saveState();
+  renderDashboard();
+}
+
+/* ───── SEARCH / FILTER ───── */
+
+function filterProjectList(query) {
+  const q = query.toLowerCase().trim();
+  document.querySelectorAll(".project-list-item").forEach(li => {
+    const name = li.querySelector(".project-list-name").textContent.toLowerCase();
+    li.style.display = name.includes(q) ? "" : "none";
+  });
+}
+
+/* ───── BIND ALL EVENTS ───── */
+
+function bindEvents() {
+  // Sidebar
+  document.getElementById("sidebarToggleBtn").addEventListener("click", toggleSidebar);
+  document.getElementById("sidebarOverlay").addEventListener("click", closeSidebar);
+
+  // Project list actions
+  document.getElementById("addProjectBtn").addEventListener("click", addProject);
+  document.getElementById("importProjectBtn").addEventListener("click", importProjectFromFile);
+  document.getElementById("exportAllBtn").addEventListener("click", exportAllProjects);
+  document.getElementById("projectSearchInput").addEventListener("input", e => filterProjectList(e.target.value));
+
+  // Dashboard toolbar
+  document.getElementById("exportProjectBtn").addEventListener("click", exportActiveProject);
+  document.getElementById("duplicateProjectBtn").addEventListener("click", duplicateProject);
+  document.getElementById("resetDashboard").addEventListener("click", resetDashboard);
+  document.getElementById("clearStorage").addEventListener("click", () => {
+    if (confirm("CZY NA PEWNO? To usunie WSZYSTKIE dane z przeglądarki.")) {
+      localStorage.clear();
+      location.reload();
+    }
+  });
+
+  // Survey nav
+  document.getElementById("predPrev").addEventListener("click",  () => { predictabilityIndex++; renderPredictability(); });
+  document.getElementById("predNext").addEventListener("click",  () => { predictabilityIndex--; renderPredictability(); });
+  document.getElementById("surveyPrev").addEventListener("click", () => { currentIndex++;        renderSurvey(); });
+  document.getElementById("surveyNext").addEventListener("click", () => { currentIndex--;        renderSurvey(); });
+
+  // Survey imports — predictability
+  document.getElementById("predImportClip").addEventListener("click", () =>
+    importFromClipboard(
+      () => getActiveProject().predictabilityHistory,
+      () => {},
+      () => { predictabilityIndex = 0; renderPredictability(); }
+    )
+  );
+  document.getElementById("predImportFile").addEventListener("click", () =>
+    importFromFile(
+      () => getActiveProject().predictabilityHistory,
+      () => { predictabilityIndex = 0; renderPredictability(); }
+    )
+  );
+  document.getElementById("predDelete").addEventListener("click", () =>
+    deleteCurrent(
+      () => getActiveProject().predictabilityHistory,
+      predictabilityIndex,
+      null,
+      () => {
+        const len = getActiveProject().predictabilityHistory.length;
+        if (predictabilityIndex >= len) predictabilityIndex = Math.max(0, len - 1);
+        renderPredictability();
+      }
+    )
+  );
+
+  // Survey imports — status
+  document.getElementById("surveyImportClip").addEventListener("click", () =>
+    importFromClipboard(
+      () => getActiveProject().surveyHistory,
+      () => {},
+      () => { currentIndex = 0; renderSurvey(); }
+    )
+  );
+  document.getElementById("surveyImportFile").addEventListener("click", () =>
+    importFromFile(
+      () => getActiveProject().surveyHistory,
+      () => { currentIndex = 0; renderSurvey(); }
+    )
+  );
+  document.getElementById("surveyDelete").addEventListener("click", () =>
+    deleteCurrent(
+      () => getActiveProject().surveyHistory,
+      currentIndex,
+      null,
+      () => {
+        const len = getActiveProject().surveyHistory.length;
+        if (currentIndex >= len) currentIndex = Math.max(0, len - 1);
+        renderSurvey();
+      }
+    )
+  );
+
+  // Planner
+  document.getElementById("addTimelineBtn").addEventListener("click", () => openTimelineModal());
 }
 
 /* ───── INIT ───── */
 
-document.getElementById("projectTitle").innerText = projectData.name;
-
-renderSurvey();
-renderTasks();
-renderTimeline();
-renderPredictability();
-initCalendar();
+boot();
 initProjectNameEdit();
-renderProjectDocs();
-
-// Main Events
-document.getElementById("resetDashboard").addEventListener("click", resetDashboard);
-document.getElementById("clearStorage").addEventListener("click", () => {
-    if (confirm("CZY NA PEWNO? To usunie WSZYSTKIE dane z przeglądarki (localStorage).")) {
-        localStorage.clear();
-        location.reload();
-    }
-});
-
-// Nav Events
-document.getElementById("predPrev").addEventListener("click", () => { predictabilityIndex++; renderPredictability(); });
-document.getElementById("predNext").addEventListener("click", () => { predictabilityIndex--; renderPredictability(); });
-document.getElementById("surveyPrev").addEventListener("click", () => { currentIndex++; renderSurvey(); });
-document.getElementById("surveyNext").addEventListener("click", () => { currentIndex--; renderSurvey(); });
-
-// Survey Actions Events
-document.getElementById("surveyImportClip").addEventListener("click", () => importFromClipboard(surveyHistoryData, () => renderSurvey()));
-document.getElementById("surveyImportFile").addEventListener("click", () => importFromFile(surveyHistoryData, () => renderSurvey()));
-document.getElementById("surveyDelete").addEventListener("click", () => deleteCurrent(surveyHistoryData, currentIndex, () => {
-    if (currentIndex >= surveyHistoryData.length) currentIndex = Math.max(0, surveyHistoryData.length - 1);
-    renderSurvey();
-}));
-
-document.getElementById("predImportClip").addEventListener("click", () => importFromClipboard(predictabilityHistoryData, () => renderPredictability()));
-document.getElementById("predImportFile").addEventListener("click", () => importFromFile(predictabilityHistoryData, () => renderPredictability()));
-document.getElementById("predDelete").addEventListener("click", () => deleteCurrent(predictabilityHistoryData, predictabilityIndex, () => {
-    if (predictabilityIndex >= predictabilityHistoryData.length) predictabilityIndex = Math.max(0, predictabilityHistoryData.length - 1);
-    renderPredictability();
-}));
-
-// Planner Events
-document.getElementById("addTimelineBtn").addEventListener("click", addTimelineEntry);
+bindEvents();

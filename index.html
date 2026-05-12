@@ -1,244 +1,245 @@
 <!DOCTYPE html>
 <html lang="pl">
-
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>PMO Dashboard</title>
-
-  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500&display=swap"
-    rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
   <link rel="stylesheet" href="styles.css">
   <script defer src="https://cloud.umami.is/script.js" data-website-id="b3f1f00b-bb9b-4eea-be0a-107d88032ca5"></script>
-  <script data-goatcounter="https://oledaw.goatcounter.com/count"
-        async src="//gc.zgo.at/count.js"></script>
+  <script data-goatcounter="https://oledaw.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
 </head>
-
 <body>
 
-  <div class="dashboard">
+<div id="appShell" class="app-shell">
 
-    <!-- HEADER -->
-    <div class="project-header">
-      <div class="project-title" id="projectTitle"></div>
-      <div class="header-actions">
-        <button class="btn btn-sm btn-danger" id="clearStorage" title="Wyczyść całkowicie localStorage">🗑 Wyczyść
-          Storage</button>
-        <button class="btn btn-sm" id="resetDashboard">🔄 Resetuj Dashboard</button>
-        <input type="file" id="importFile" style="display:none" accept=".json">
-      </div>
-    </div>
-    <div id="projectDocs" class="project-docs"></div>
+  <!-- ═══ SIDEBAR OVERLAY (mobile) ═══ -->
+  <div id="sidebarOverlay" class="sidebar-overlay"></div>
 
-    <div class="divider"></div>
+  <!-- ═══════════════ SIDEBAR ═══════════════ -->
+  <aside class="sidebar">
 
-    <!-- ANKIETA PRZEWIDYWALNOŚCI -->
-    <div class="section">
-      <div class="survey-header">
-        <div class="survey-title-group">
-          <h2 class="section-title" id="predictabilityDate"></h2>
-          <div class="survey-nav">
-            <button class="nav-btn" id="predPrev">‹</button>
-            <button class="nav-btn" id="predNext">›</button>
-          </div>
-        </div>
-        <div class="survey-actions">
-          <button class="btn btn-sm" id="predImportClip" title="Dodaj ze schowka (JSON)">+ Clip</button>
-          <button class="btn btn-sm" id="predImportFile" title="Importuj z pliku (JSON Array)">⇪ Plik</button>
-          <button class="btn btn-sm btn-danger" id="predDelete" title="Usuń bieżącą">🗑</button>
-          <a class="project-link" href="https://oledaw.github.io/project-predictability-assessment/"
-            target="_blank">→</a>
-        </div>
-      </div>
-
-      <div class="grid">
-        <div class="panel">
-          <h3>Score</h3>
-          <div id="predictabilityScore" class="score" style="font-size:32px; margin:0;"></div>
-          <div id="predictabilityLevel" class="item"></div>
-        </div>
-        <div class="panel">
-          <h3>Scoring obszarów (1-5)</h3>
-          <div id="areaScores" class="kpi-grid"></div>
-        </div>
-        <div class="panel" id="predCommentPanel" style="grid-column: 1 / -1;">
-          <details class="comment-collapsible" id="predCommentDetails">
-            <summary>
-              <h3>Komentarz</h3>
-            </summary>
-            <div id="predComment" style="margin-top: 10px; font-size: 13px; color: #3A3632; line-height: 1.6;"></div>
-          </details>
-        </div>
-      </div>
+    <div class="sidebar-header">
+      <span class="sidebar-title">Projekty</span>
+      <button class="btn btn-sm" id="addProjectBtn" title="Nowy projekt">+ Nowy</button>
     </div>
 
-    <div class="divider"></div>
-
-    <!-- ANKIETA STATUSOWA -->
-    <div class="section">
-      <div class="survey-header">
-        <div class="survey-title-group">
-          <h2 class="section-title" id="surveyDate"></h2>
-          <div class="survey-nav">
-            <button class="nav-btn" id="surveyPrev">‹</button>
-            <button class="nav-btn" id="surveyNext">›</button>
-          </div>
-        </div>
-        <div class="survey-actions">
-          <button class="btn btn-sm" id="surveyImportClip" title="Dodaj ze schowka (JSON)">+ Clip</button>
-          <button class="btn btn-sm" id="surveyImportFile" title="Importuj z pliku (JSON Array)">⇪ Plik</button>
-          <button class="btn btn-sm btn-danger" id="surveyDelete" title="Usuń bieżącą">🗑</button>
-          <a class="project-link" href="https://oledaw.github.io/projectweeklystatus/" target="_blank">→</a>
-        </div>
-
-      </div>
-
-      <div class="grid">
-        <div class="panel">
-          <div class="status" id="status"></div>
-          <div class="score" id="score"></div>
-          <div class="trend" id="trend"></div>
-          <div class="summary" id="summary"></div>
-        </div>
-        <div class="panel">
-          <h3>Scoring obszarów</h3>
-          <div class="kpi-grid" id="kpis"></div>
-        </div>
-        <div class="panel" id="pmCommentPanel" style="grid-column: 1 / -1;">
-          <details class="comment-collapsible" id="pmCommentDetails">
-            <summary>
-              <h3>Komentarz PM</h3>
-            </summary>
-            <div id="pmComment" style="margin-top: 10px; font-size: 13px; color: #3A3632; line-height: 1.6;"></div>
-          </details>
-        </div>
-      </div>
-    </div>
-
-    <div class="divider"></div>
-
-    <!-- REJESTR RYZYK -->
-    <div class="section">
-      <div style="display:flex; justify-content:space-between; align-items:center;">
-        <h2 class="section-title">Rejestr ryzyk</h2>
-        <a class="project-link" href="https://oledaw.github.io/riskregister/" target="_blank">→</a>
-      </div>
-      <div class="grid">
-        <div class="panel">
-          <h3>Top risks</h3>
-          <div id="risks"></div>
-        </div>
-        <div class="panel">
-          <h3>Actions</h3>
-          <div id="actions"></div>
-        </div>
-      </div>
-    </div>
-
-    <div class="divider"></div>
-
-    <!-- PLANNER -->
-    <div class="section">
-      <div style="display:flex; justify-content:space-between; align-items:center;">
-        <h2 class="section-title">Planner</h2>
-        <button class="btn btn-sm" id="addTimelineBtn">+ Dodaj datę</button>
-      </div>
-      <div class="planner-grid">
-
-        <div class="panel">
-          <div id="calendar"></div>
-        </div>
-
-        <div class="panel">
-          <h3>Timeline</h3>
-          <div id="timeline"></div>
-        </div>
-
-        <div class="panel tasks-panel">
-          <details class="tasks-collapsible">
-            <summary>
-              <h3>Tasks</h3>
-            </summary>
-            <div id="tasks"></div>
-          </details>
-        </div>
-
-      </div>
-    </div>
-
-  </div>
-
-  <div id="timelineModal" class="modal">
-    <div class="modal-content">
-      <h3>Dodaj wpis do Timeline</h3>
-      <div class="form-group">
-        <label>Milestone:</label>
-        <input type="text" id="msName" placeholder="np. Kickoff">
-      </div>
-      <div class="form-group grid-2">
-        <div>
-          <label>Data start (opcj.):</label>
-          <input type="text" id="msStart" placeholder="RRRR-MM-DD">
-        </div>
-        <div>
-          <label>Data koniec:</label>
-          <input type="text" id="msEnd" placeholder="RRRR-MM-DD">
-        </div>
-      </div>
-      <div class="form-group">
-        <label>Status:</label>
-        <select id="msStatus">
-          <option value="planned">Planned</option>
-          <option value="in_progress">In Progress</option>
-          <option value="done">Done</option>
-          <option value="blocked">Blocked</option>
-        </select>
-      </div>
-      <div class="form-group" style="flex-direction:row; align-items:center; gap:10px;">
-        <input type="checkbox" id="msUpdated" style="width:auto;">
-        <label style="margin-bottom:0;">Oznacz jako zaktualizowane (kropka)</label>
-      </div>
-      <div class="modal-actions">
-        <button class="btn" onclick="closeTimelineModal()">Anuluj</button>
-        <button class="btn btn-secondary" onclick="saveTimelineEntry()">Zapisz</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="docModal" class="modal">
-  <div class="modal-content">
-    <h3>Edytuj dokument</h3>
-
-    <div class="form-group">
-      <label>Nazwa dokumentu</label>
-      <input type="text" id="docLabel" disabled>
-    </div>
-
-    <div class="form-group">
-      <label>Link</label>
+    <!-- Search -->
+    <div class="sidebar-search">
       <input
         type="text"
-        id="docUrl"
-        placeholder="https://..."
+        id="projectSearchInput"
+        class="sidebar-search-input"
+        placeholder="🔍 Szukaj projektu…"
       >
     </div>
 
-    <div class="modal-actions">
-      <button class="btn" onclick="closeDocModal()">
-        Anuluj
-      </button>
+    <!-- List -->
+    <ul id="projectListItems" class="project-list"></ul>
 
-      <button class="btn btn-secondary" onclick="saveDocModal()">
-        Zapisz
-      </button>
+    <!-- Footer actions -->
+    <div class="sidebar-footer">
+      <button class="btn btn-sm" id="importProjectBtn" title="Importuj projekt z JSON">⇪ Import</button>
+      <button class="btn btn-sm" id="exportAllBtn"     title="Eksportuj wszystkie projekty">⇩ Eksport wszystkich</button>
+    </div>
+
+  </aside>
+
+  <!-- ═══════════════ MAIN ═══════════════ -->
+  <main class="main-area">
+    <div class="dashboard">
+
+      <!-- ── TOP TOOLBAR ── -->
+      <div class="main-toolbar">
+        <button class="btn btn-sm" id="sidebarToggleBtn" title="Lista projektów">☰ Projekty</button>
+        <button class="btn btn-sm" id="exportProjectBtn"   title="Eksportuj aktywny projekt do JSON">⇩ Eksport</button>
+        <button class="btn btn-sm" id="duplicateProjectBtn" title="Duplikuj projekt">⧉ Duplikuj</button>
+        <button class="btn btn-sm btn-danger" id="clearStorage"    title="Wyczyść localStorage">🗑 Wyczyść Storage</button>
+        <button class="btn btn-sm"            id="resetDashboard"  title="Resetuj aktywny projekt">🔄 Resetuj</button>
+      </div>
+
+      <!-- ── PROJECT HEADER ── -->
+      <div class="project-header">
+        <div class="project-title" id="projectTitle"></div>
+      </div>
+      <div id="projectDocs" class="project-docs"></div>
+
+      <div class="divider"></div>
+
+      <!-- ── ANKIETA PRZEWIDYWALNOŚCI ── -->
+      <div class="section">
+        <div class="survey-header">
+          <div class="survey-title-group">
+            <h2 class="section-title" id="predictabilityDate"></h2>
+            <div class="survey-nav">
+              <button class="nav-btn" id="predPrev">‹</button>
+              <button class="nav-btn" id="predNext">›</button>
+            </div>
+          </div>
+          <div class="survey-actions">
+            <button class="btn btn-sm" id="predImportClip"  title="Dodaj ze schowka (JSON)">+ Clip</button>
+            <button class="btn btn-sm" id="predImportFile"  title="Importuj z pliku (JSON Array)">⇪ Plik</button>
+            <button class="btn btn-sm btn-danger" id="predDelete" title="Usuń bieżącą">🗑</button>
+            <a class="project-link" href="https://oledaw.github.io/project-predictability-assessment/" target="_blank">→</a>
+          </div>
+        </div>
+        <div class="grid">
+          <div class="panel">
+            <h3>Score</h3>
+            <div id="predictabilityScore" class="score" style="font-size:32px;margin:0;"></div>
+            <div id="predictabilityLevel" class="item"></div>
+          </div>
+          <div class="panel">
+            <h3>Scoring obszarów (1-5)</h3>
+            <div id="areaScores" class="kpi-grid"></div>
+          </div>
+          <div class="panel" id="predCommentPanel" style="grid-column:1/-1;">
+            <details class="comment-collapsible" id="predCommentDetails">
+              <summary><h3>Komentarz</h3></summary>
+              <div id="predComment" style="margin-top:10px;font-size:13px;color:#3A3632;line-height:1.6;"></div>
+            </details>
+          </div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- ── ANKIETA STATUSOWA ── -->
+      <div class="section">
+        <div class="survey-header">
+          <div class="survey-title-group">
+            <h2 class="section-title" id="surveyDate"></h2>
+            <div class="survey-nav">
+              <button class="nav-btn" id="surveyPrev">‹</button>
+              <button class="nav-btn" id="surveyNext">›</button>
+            </div>
+          </div>
+          <div class="survey-actions">
+            <button class="btn btn-sm" id="surveyImportClip" title="Dodaj ze schowka (JSON)">+ Clip</button>
+            <button class="btn btn-sm" id="surveyImportFile" title="Importuj z pliku (JSON Array)">⇪ Plik</button>
+            <button class="btn btn-sm btn-danger" id="surveyDelete" title="Usuń bieżącą">🗑</button>
+            <a class="project-link" href="https://oledaw.github.io/projectweeklystatus/" target="_blank">→</a>
+          </div>
+        </div>
+        <div class="grid">
+          <div class="panel">
+            <div class="status" id="status"></div>
+            <div class="score"  id="score"></div>
+            <div class="trend"  id="trend"></div>
+            <div class="summary" id="summary"></div>
+          </div>
+          <div class="panel">
+            <h3>Scoring obszarów</h3>
+            <div class="kpi-grid" id="kpis"></div>
+          </div>
+          <div class="panel" id="pmCommentPanel" style="grid-column:1/-1;">
+            <details class="comment-collapsible" id="pmCommentDetails">
+              <summary><h3>Komentarz PM</h3></summary>
+              <div id="pmComment" style="margin-top:10px;font-size:13px;color:#3A3632;line-height:1.6;"></div>
+            </details>
+          </div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- ── REJESTR RYZYK ── -->
+      <div class="section">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <h2 class="section-title">Rejestr ryzyk</h2>
+          <a class="project-link" href="https://oledaw.github.io/riskregister/" target="_blank">→</a>
+        </div>
+        <div class="grid">
+          <div class="panel"><h3>Top risks</h3><div id="risks"></div></div>
+          <div class="panel"><h3>Actions</h3><div id="actions"></div></div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- ── PLANNER ── -->
+      <div class="section">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <h2 class="section-title">Planner</h2>
+          <button class="btn btn-sm" id="addTimelineBtn">+ Dodaj datę</button>
+        </div>
+        <div class="planner-grid">
+          <div class="panel"><div id="calendar"></div></div>
+          <div class="panel"><h3>Timeline</h3><div id="timeline"></div></div>
+          <div class="panel tasks-panel">
+            <details class="tasks-collapsible">
+              <summary><h3>Tasks</h3></summary>
+              <div id="tasks" style="margin-top:10px;"></div>
+            </details>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /.dashboard -->
+  </main>
+
+</div><!-- /#appShell -->
+
+<!-- ── MODAL: Timeline ── -->
+<div id="timelineModal" class="modal">
+  <div class="modal-content">
+    <h3>Dodaj wpis do Timeline</h3>
+    <div class="form-group">
+      <label>Milestone:</label>
+      <input type="text" id="msName" placeholder="np. Kickoff">
+    </div>
+    <div class="form-group grid-2">
+      <div>
+        <label>Data start (opcj.):</label>
+        <input type="text" id="msStart" placeholder="RRRR-MM-DD">
+      </div>
+      <div>
+        <label>Data koniec:</label>
+        <input type="text" id="msEnd" placeholder="RRRR-MM-DD">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Status:</label>
+      <select id="msStatus">
+        <option value="planned">Planned</option>
+        <option value="in_progress">In Progress</option>
+        <option value="done">Done</option>
+        <option value="blocked">Blocked</option>
+      </select>
+    </div>
+    <div class="form-group" style="flex-direction:row;align-items:center;gap:10px;">
+      <input type="checkbox" id="msUpdated" style="width:auto;">
+      <label style="margin-bottom:0;">Oznacz jako zaktualizowane (kropka)</label>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeTimelineModal()">Anuluj</button>
+      <button class="btn btn-secondary" onclick="saveTimelineEntry()">Zapisz</button>
     </div>
   </div>
 </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-  <script src="data.js"></script>
-  <script src="app.js"></script>
-</body>
+<!-- ── MODAL: Doc ── -->
+<div id="docModal" class="modal">
+  <div class="modal-content">
+    <h3>Edytuj dokument</h3>
+    <div class="form-group">
+      <label>Nazwa dokumentu</label>
+      <input type="text" id="docLabel" disabled>
+    </div>
+    <div class="form-group">
+      <label>Link</label>
+      <input type="text" id="docUrl" placeholder="https://...">
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeDocModal()">Anuluj</button>
+      <button class="btn btn-secondary" onclick="saveDocModal()">Zapisz</button>
+    </div>
+  </div>
+</div>
 
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
 </html>

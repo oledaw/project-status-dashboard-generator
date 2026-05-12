@@ -502,30 +502,36 @@ h3 {
 .project-docs {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 12px;
+  gap: 6px;
+  margin-top: 8px;
 }
 
 .project-doc-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+  position: relative;
+  display: inline-flex;
 }
 
 .project-doc-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   border: 1px solid #e2ddd6;
   background: #fff;
   border-radius: 8px;
-  padding: 8px 12px;
+  padding: 6px 10px;
+  font-family: "DM Sans", sans-serif;
   font-size: 13px;
   text-decoration: none;
   color: #3a3632;
-  transition: all 0.2s ease;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  white-space: nowrap;
 }
 
 .project-doc-btn:hover {
-  background: #f5f3ef;
-  transform: translateY(-1px);
+  background: #f0ede9;
+  border-color: #ccc8c2;
+  transform: none;
 }
 
 .project-doc-btn.disabled {
@@ -534,16 +540,274 @@ h3 {
   cursor: default;
 }
 
-.project-doc-edit-btn {
-  width: 32px;
-  height: 32px;
-  border: 1px solid #e2ddd6;
-  background: #fff;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s ease;
+/* edit icon — hidden by default, shown on row hover */
+.project-doc-edit-icon {
+  font-size: 11px;
+  opacity: 0;
+  transition: opacity 0.15s;
+  line-height: 1;
+  color: #9a948d;
 }
 
-.project-doc-edit-btn:hover {
-  background: #f5f3ef;
+.project-doc-row:hover .project-doc-edit-icon {
+  opacity: 1;
+}
+
+/* the old standalone edit button is gone — icon lives inside the btn */
+.project-doc-edit-btn {
+  display: none;
+}
+
+/* ═══════════════════════════════════════════════
+   APP SHELL — SIDEBAR LAYOUT
+   ═══════════════════════════════════════════════ */
+
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  padding: 0;           /* override starego padding:30px */
+}
+
+.app-shell {
+  display: flex;
+  min-height: 100vh;
+  position: relative;
+}
+
+/* ───── SIDEBAR ───── */
+
+.sidebar {
+  width: 240px;
+  min-width: 240px;
+  background: #faf9f7;
+  border-right: 1px solid #e2ddd6;
+  display: flex;
+  flex-direction: column;
+  padding: 16px 0 0 0;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  flex-shrink: 0;
+  z-index: 100;
+  transition: transform 0.25s ease;
+}
+
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 14px 12px 14px;
+  border-bottom: 1px solid #e2ddd6;
+}
+
+.sidebar-title {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #6b6560;
+  letter-spacing: 0.5px;
+}
+
+/* ───── SIDEBAR SEARCH ───── */
+
+.sidebar-search {
+  padding: 10px 10px 6px 10px;
+}
+
+.sidebar-search-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 6px 10px;
+  border: 1px solid #e2ddd6;
+  border-radius: 8px;
+  font-family: "DM Sans", sans-serif;
+  font-size: 12px;
+  background: #fff;
+  color: #3a3632;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.sidebar-search-input:focus {
+  border-color: #3a3632;
+}
+
+/* ───── PROJECT LIST ───── */
+
+.project-list {
+  list-style: none;
+  margin: 4px 0 0 0;
+  padding: 0 8px;
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.project-list-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 8px;
+  transition: background 0.15s;
+}
+
+.project-list-item:hover {
+  background: #f0ede9;
+}
+
+.project-list-item.active {
+  background: #ede9e3;
+}
+
+.project-list-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 8px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: "DM Sans", sans-serif;
+  font-size: 13px;
+  color: #3a3632;
+  text-align: left;
+  border-radius: 8px;
+  min-width: 0;
+}
+
+.project-list-btn:hover { background: none; }
+
+.project-list-name {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.project-list-score {
+  font-size: 11px;
+  font-weight: 600;
+  background: #e9e5df;
+  border-radius: 999px;
+  padding: 1px 7px;
+  color: #3a3632;
+  flex-shrink: 0;
+}
+
+.project-list-delete {
+  opacity: 0;
+  flex-shrink: 0;
+  padding: 4px 6px;
+  transition: opacity 0.15s;
+  border: none;
+  background: none;
+  font-size: 13px;
+}
+
+.project-list-item:hover .project-list-delete {
+  opacity: 1;
+}
+
+/* ───── SIDEBAR FOOTER ───── */
+
+.sidebar-footer {
+  padding: 12px 10px;
+  border-top: 1px solid #e2ddd6;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sidebar-footer .btn {
+  justify-content: center;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* ───── MAIN AREA ───── */
+
+.main-area {
+  flex: 1;
+  min-width: 0;
+  padding: 30px;
+  overflow-y: auto;
+}
+
+.dashboard {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+/* ───── SIDEBAR TOGGLE BUTTON (always visible) ───── */
+
+#sidebarToggleBtn {
+  display: none;       /* shown only on mobile */
+}
+
+/* ───── SIDEBAR OVERLAY (mobile) ───── */
+
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.35);
+  z-index: 99;
+}
+
+/* ═══════════════════════════════════════════════
+   RESPONSIVE
+   ═══════════════════════════════════════════════ */
+
+@media (max-width: 768px) {
+  .main-area { padding: 12px; }
+
+  /* Hide sidebar by default on mobile */
+  .sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    height: 100vh;
+    transform: translateX(-100%);
+    box-shadow: 4px 0 20px rgba(0,0,0,0.12);
+  }
+
+  /* Show sidebar when shell has class */
+  .app-shell.sidebar-open .sidebar {
+    transform: translateX(0);
+  }
+
+  .app-shell.sidebar-open .sidebar-overlay {
+    display: block;
+  }
+
+  #sidebarToggleBtn {
+    display: flex;
+  }
+
+  .grid     { grid-template-columns: 1fr; }
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+
+  .planner-grid {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "calendar"
+      "timeline"
+      "tasks";
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   MAIN TOOLBAR (adjust for new buttons)
+   ═══════════════════════════════════════════════ */
+
+.main-toolbar {
+  flex-wrap: wrap;
 }

@@ -6,7 +6,7 @@
   <title>PMO Dashboard</title>
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="css/styles.css">
   <script defer src="https://cloud.umami.is/script.js" data-website-id="b3f1f00b-bb9b-4eea-be0a-107d88032ca5"></script>
   <script data-goatcounter="https://oledaw.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
 </head>
@@ -53,10 +53,10 @@
       <!-- ── TOP TOOLBAR ── -->
       <div class="main-toolbar">
         <button class="btn btn-sm" id="sidebarToggleBtn" title="Lista projektów">☰ Projekty</button>
-        <button class="btn btn-sm" id="exportProjectBtn"   title="Eksportuj aktywny projekt do JSON">⇩ Eksport</button>
+        <button class="btn btn-sm" id="exportProjectBtn"    title="Eksportuj aktywny projekt do JSON">⇩ Eksport</button>
         <button class="btn btn-sm" id="duplicateProjectBtn" title="Duplikuj projekt">⧉ Duplikuj</button>
-        <button class="btn btn-sm btn-danger" id="clearStorage"    title="Wyczyść localStorage">🗑 Wyczyść Storage</button>
-        <button class="btn btn-sm"            id="resetDashboard"  title="Resetuj aktywny projekt">🔄 Resetuj</button>
+        <button class="btn btn-sm btn-danger" id="clearStorage"   title="Wyczyść localStorage">🗑 Wyczyść Storage</button>
+        <button class="btn btn-sm"            id="resetDashboard" title="Resetuj aktywny projekt">🔄 Resetuj</button>
       </div>
 
       <!-- ── PROJECT HEADER ── -->
@@ -238,8 +238,9 @@
   </div>
 </div>
 
+<!-- Flatpickr CDN (global, loaded before module) -->
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-<script src="data.js"></script>
-<script src="app.js"></script>
+<!-- ES Module entry point -->
+<script type="module" src="js/app.js"></script>
 </body>
 </html>
